@@ -1,0 +1,178 @@
+\documentclass[12pt, twoside, a4paper]{report}
+\pagestyle{headings}
+\pagestyle{empty}
+\usepackage{indentfirst}
+\usepackage{graphicx}
+\usepackage[english, greek]{babel} % mine
+\usepackage[utf8x]{inputenc}  % mine
+\usepackage{makeidx}  % mine
+\usepackage[nottoc]{tocbibind}  % mine
+\usepackage{babelbib}  % mine
+\makeindex  % mine
+
+\begin{document}
+\selectlanguage{greek} % mine
+
+\title{
+\vspace{-6ex}
+\begin{center}
+\includegraphics[scale=1]{pyrforos.png}  % mine -- no .eps files with pdflatex
+\end{center}
+\Large{Ε}\large{ΘΝΙΚΟ}
+\Large{Μ}\large{ΕΤΣΟΒΙΟ}
+\Large{Π}\large{ΟΛΥΤΕΧΝΕΙΟ} \\
+\normalsize{Τ}\small{ΜΗΜΑ}
+\normalsize{Η}\small{ΛΕΚΤΡΟΛΟΓΩΝ}
+\normalsize{Μ}\small{ΗΧΑΝΙΚΩΝ}
+\normalsize{Κ}\small{ΑΙ}
+\normalsize{Μ}\small{ΗΧΑΝΙΚΩΝ}
+\normalsize{Υ}\small{ΠΟΛΟΓΙΣΤΩΝ} \\
+\vspace{2ex}
+-ΕΙΣΑΓΕΤΕ ΤΟΝ ΤΟΜΕΑ- \\
+-ΕΙΣΑΓΕΤΕ ΤΟ ΕΡΓΑΣΤΗΡΙΟ- \\
+\vspace{8ex}
+\large \textbf{-Εισάγετε τον τίτλο της διπλωματικής εργασίας-} \\
+\vspace{10ex}
+\large
+ΔΙΠΛΩΜΑΤΙΚΗ ΕΡΓΑΣΙΑ \\
+\vspace{2ex}
+\normalsize
+-Εισάγετε το σωστό άρθρο (της/του/των)- \\
+\vspace{2ex}
+\parbox[c]{0.4\textwidth} { \center\textbf{
+-Εισάγετε το όνομα, αρχικό πατρώνυμου και επωνυμο των συγγραφέων- }}
+\selectlanguage{english}  % mine -- to make sense
+\parbox[c]{0.4\textwidth} { \center\textbf{
+	-another author, whose name is here- }}
+\selectlanguage{greek}  % mine again
+\vspace{10ex}
+\flushleft
+\begin{tabbing}
+	\textbf{Επιβλέπων}: \= -Εισάγετε το όνομα, αρχικό πατρωνύμου
+				και επίθετο- \\
+			    \> -Εισάγετε τον τίτλο του επιβλέποντα-
+\end{tabbing}
+}
+\date{
+\normalsize
+Αθήνα, -Εισάγετε το μήνα και το έτος κατάθεσης της εργασίας-}
+
+\maketitle
+\newpage
+\hspace{10pt}
+%\tiny
+%(this page is left intentionally blanc)
+%\normalsize
+% \newpage
+\includegraphics{pyrforos.png}  % mine -- no .eps files with pdflatex
+\noindent
+\parbox[b]{0.6\textwidth} {\textbf{
+\noindent
+\normalsize{Ε}\small{ΘΝΙΚΟ}  % mine -- this needs modification
+\normalsize{Μ}\small{ΕΤΣΟΒΙΟ}
+\normalsize{Π}\small{ΟΛΥΤΕΧΝΕΙΟ}} \\
+\small
+ΤΜΗΜΑ ΗΛΕΚΤΡΟΛΟΓΩΝ ΜΗΧΑΝΙΚΩΝ ΚΑΙ ΜΗΧΑΝΙΚΩΝ ΥΠΟΛΟΓΙΣΤΩΝ \\
+-ΕΙΣΑΓΕΤΕ ΤΟΝ ΤΟΜΕΑ- \\
+-ΕΙΣΑΓΕΤΕ ΤΟ ΕΡΓΑΣΤΗΡΙΟ-}
+
+\begin{center}
+\vspace{8ex}
+\large \textbf{-Εισάγετε τον τίτλο της διπλωματικής εργασίας-} \\
+\vspace{10ex}
+\large
+ΔΙΠΛΩΜΑΤΙΚΗ ΕΡΓΑΣΙΑ \\
+\vspace{2ex}
+\normalsize
+-Εισάγετε το σωστό άρθρο (της/του/των)- \\
+\vspace{2ex}
+\parbox[c]{0.4\textwidth} { \center\textbf{
+-Εισάγετε το όνομα, αρχικό πατρώνυμου και επωνυμο των συγγραφέων- }}
+\selectlanguage{english}  % mine -- to make sense
+\parbox[c]{0.4\textwidth} { \center\textbf{
+	-another author, whose name is here- }}
+\selectlanguage{greek}  % mine again
+\vspace{10ex}
+\flushleft
+\begin{tabbing}
+\textbf{Επιβλέπων}: \= -Εισάγετε το όνομα, αρχικό πατρωνύμου
+			και επίθετο- \\
+		    \> -Εισάγετε τον τίτλο του επιβλέποντα-
+\end{tabbing}
+\end{center}
+
+\noindent
+Εγκρίθηκε από την τριμελή εξεταστική επιτροπή την -εισάγετε ημερομηνία-.
+
+\begin{center}
+\scriptsize
+\parbox[b]{0.3\textwidth} {\center
+	........................................
+	-Εισάγετε ονοματεπώνυμο-
+	-Εισάγετε τίτλο-
+}
+\parbox[b]{0.3\textwidth} {\center
+	........................................
+	-Εισάγετε ονοματεπώνυμο-
+	-Εισάγετε τίτλο-
+}
+\parbox[b]{0.3\textwidth} {\center
+	........................................
+	-Εισάγετε ονοματεπώνυμο-
+	-Εισάγετε τίτλο-
+}
+\end{center}
+\vspace{10ex}
+\normalsize
+\noindent
+Αθήνα, (εισάγετε το μήνα και το έτος κατάθεσης της εργασίας).
+\newpage
+\hspace{10pt}
+
+\vspace{30ex}
+\noindent
+................................... \\
+\textbf{(Εισάγετε όνομα, αρχικό πατώνυμου και επίθετο συγγραφέα)} \\
+(Εισάγετε τον απονεμηθέντα τίτλο στο συγγραφέα) \\
+\vspace{8ex}
+
+\noindent
+................................... \\
+\textbf{(Εισάγετε όνομα, αρχικό πατώνυμου και επίθετο συγγραφέα)} \\
+(Εισάγετε τον απονεμηθέντα τίτλο στο συγγραφέα) \\
+\vspace{8ex}
+
+\noindent
+................................... \\
+\textbf{(Εισάγετε όνομα, αρχικό πατώνυμου και επίθετο συγγραφέα)} \\
+(Εισάγετε τον απονεμηθέντα τίτλο στο συγγραφέα) \\
+\vspace{26ex}
+
+% mine
+\newpage
+\tableofcontents
+\listoffigures
+\listoftables
+
+% here go the \include commands (chapters etc, if you want to do it separately)
+% \include{abstract}
+% \include{ch0}
+\include{ch1}
+
+
+\newpage
+\small
+\noindent
+\selectlanguage{greek}  % mine
+% mine -- maybe more text about copyrights, etc here.
+\copyright \hspace{1em}(Εισάγετε έτος έκδοσης) Εθνικό Μετσόβιο Πολυτεχνείο.
+\selectlanguage{english}  % mine
+\textlatin{All rights reserved.}
+
+\newpage
+\selectlanguage{greek}  % mine
+\printindex  % mine -- do you use one?
+\nocite{*}
+\bibliographystyle{babplain-fl}  %mine -- for name-surname order
+\bibliography{references}  % mine -- the references.bib file
+\end{document}
