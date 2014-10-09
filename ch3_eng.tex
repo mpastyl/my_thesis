@@ -1,9 +1,47 @@
+
 \selectlanguage{english}
 \def\<#1>{\textit{#1}}
 
 \chapter{Hash Tables}
 \section{Introduction}
 
-Hash Tables are a fundamendal data structure that provideds fast store and lookup operations, and it is used in various programming aplications.The abillity ,for example ,to create sets and quickly perform searches on them, depends on the efficiency of the underlying Hash Table. For this reason, many algorithms and aproaches, both sequencial and concurrent have been put forward, each with its own distinctive strengths and weaknesses. 
+Hash Tables are a fundamental data structure that provides fast store and lookup operations, and it is used in various programming applications. The ability ,for example ,to create sets and quickly perform searches on them, depends on the efficiency of the underlying Hash Table. For this reason, many algorithms and approaches, both sequential and concurrent have been put forward, each with its own distinctive strengths and weaknesses. 
 
-The purpose of a Hash Table is to efficiently associate a given value with a key and use that key to rapidly store or search that value among other values.It usually consists of an array or list of buckets, which can hold one or more values , as well as a hash function that maps a value on the table.
+The purpose of a Hash Table is to efficiently associate a given value with a key and use that key to rapidly store or search that value among other values. It usually consists of an array or list of buckets, which can hold one or more values, as well as a hash function that maps a value on the table.
+
+Ideally,  every different values will hash to different buckets, making it easy to insert and search them, However, it is improbable that there will be no collisions, in fact for a large number of operations we expect collisions to be quite common. For the purpose of avoiding collisions, one must consider the size of the hash table (more buckets  means more ways to distribute the keys) and the hash function ( a hash function that will evenly distribute keys among the available buckets will reduce collisions). Even so, collisions are unavoidable, and the way they are handled is one the most important factor among the various implementations.
+
+\subsection{Collision Resolution}
+
+Hash tables can be divided into two main categories: Closed Addressing and Open Addressing.
+
+%add some bullets here
+
+Closed addressing hash tables allow more than one values to be stored on the same bucket. This is usually implemented by attaching a linked list at the start bucket , and each new value is added on the list. The length of the list  must be kept bellow a constant number (called load factor) , to keep operations on the list fast. This way the average lookup / insertion time is dependent only on load factor. It is common to keep the list ordered , which reduces the average lookup time in half. This is an easy to implement data structure and it has been proven to perform well in practice.
+
+Open addressing hash tables allow no more than a single value per bucket. When a collision is detected, the buckets are traversed in order to find an empty bucket to store the new value, even though it’s hash value does not correspond to that bucket. The sequence according to which the buckets are traversed is typically:
+
+1) Linear probing, where an empty bucket is searched within a given number of steps from the mapping bucket
+2) Quadratic probing, where the buckets is searched at increasingly bigger intervals, according to successive values of a quadratic polynomial. 
+3) Double hashing, where interval is the outcome of a new hash function.
+
+% kapoia sxhmata edw
+
+ Some other important techniques used in resolving conflicts in open addressing hash tables is cuckoo hashing and hopscotch. Cuckoo hashing, as explained later in detail, employs a second , or more hash functions. The value is first hashed using the first hash function  and if it corresponds to an non-empty bucket the second hash function is used. If both buckets are empty, then one of the two previously hashed values is evicted and then hashed again using the other hash function, possibly triggering a series of evictions until all values are hashed.
+
+%sxhma gia cuckoo hashing 
+
+Hopscotch hashing combines linear probing and cuckoo hashing. First , buckets are traversed until an empty bucket is found. If that bucket is in the neighborhood of the initially mapped bucket, the value is placed there, just as in linear probing. If all empty bucket is outside the neighborhood, values are moved in a sequence of hops, effectively moving the empty slot closer and closer to the neighborhood of the initial bucket.
+
+%sxma gia hopscotch hasing
+
+\subsection{Resizing}
+
+Resizing is important to maintain constant average insertion and lookup time. In closed addressing algorithms, buckets may become too full, making their traversal slow, while in open addressing algorithms, the table may become too full to easily  find empty buckets . In either case, the size of the table needs to be expanded and all the values from the old, small hash table must be transferred to the new bigger one. This can be done by rehashing every value of the old table to the new one (possibly causing a high delay which may not be acceptable in a real time application) or  incrementally , by moving every new inserted value to the new table , along with a few elements from the old table each time, until the old table is empty.
+
+\subsection{Concurrent hash tables}
+
+In a multiprocessor environment it is quite common for multiple threads to require concurrent access to the same hash table. Access on disjoin locations on the hash tables, suggests hash tables are may allow a much higher level of concurrency, compared to FIFO queues as studied above. Hover, keeping the data structure fast and consistent despite contention, introduces many challenges and many diverse concurrent algorithms have been proposed to face them.
+   
+
+
