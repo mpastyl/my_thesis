@@ -26,13 +26,14 @@ The data structure is implemented as a simply linked list, with a pointer Head r
 
 In its core, the algorithm uses atomic operations ( in particular Compare And Swap operations) to atomically modify the appropriate pointers. Every time, we run checks to make sure that we have a consistent view of the pointers we are trying to modify.
 
-As depicted below, an enqueue requires 2 atomic operations: one to link the last node with the new node we are trying to insert and one to swap the Tail pointer to the new node.
+As depicted in figure \ref{ms_queue_struct}, an enqueue requires 2 atomic operations: one to link the last node with the new node we are trying to insert and one to swap the Tail pointer to the new node.
 
 % εικόνα 1 από το optimistic paper
 \begin{figure}
  \centering
   \includegraphics[scale=0.4]{msqueue_struct.png}
 \caption{ The basic layout of the link list used in Michael Scott implementation}
+\label{ms_queue_struct}
 \end{figure}
 
 On the other hand, we need only one C-A-S on the value of Head to perform a dequeue.
@@ -60,13 +61,14 @@ One of the drawbacks of lock-free approaches is that, each time an atomic operat
 A solution to this problem is introduced by the next algorithm we implemented, by Ladan-Mozes and Shavit \cite{optimistic}. This implementation follows an optimistic approach ( which is why we will refer to this implementation as optimistic queue), in a sense that it runs quickly on the optimistic case where there is no conflict and leaves the costly operations for the case where an inconsistency is spotted. In particular, one of the two C-A-S operations, during enqueue, is replaced with a simple local store, making sure that we correct the data structure in case it is inconsistent.
 
 \subsection{implementation}
-Practically, the link list becomes a doubly linked list, with the "next" directions being from Tail to Head. In this way, we only need a single C-A-S to Tail to make it point to the new node, in order to successfully complete an enqueue. However, in order to have access to node from head when we dequeue, we need pointers in the reverse order, as seen below.
+Practically, the link list becomes a doubly linked list, with the "next" directions being from Tail to Head. In this way, we only need a single C-A-S to Tail to make it point to the new node, in order to successfully complete an enqueue. However, in order to have access to node from head when we dequeue, we need pointers in the reverse order, as seen in figure \ref{optimistic_struct}.
 
 %figure 2 apo optimistic paper
 \begin{figure}
  \centering
   \includegraphics[scale=0.6]{optimistic_struct.png}
  \caption{ The basic layout of the doubly linked list used in the Optimistic Queue}
+\label{optimistic_struct}
 \end{figure}
 
 Pointers in both directions are updated with simple local stores , without synchronization, which makes inconsistencies possible, in the "prev" direction. For this reason, as soon as an inconsistency is spotted, function FixList is called to traverse the list and fix all the pointers. However, the reason for inconsistencies in the "prev" direction are the long delays a single thread might take and not contention. Therefore, we expect the number of calls to FixList to remain low, even when the number of parallel threads increases.
