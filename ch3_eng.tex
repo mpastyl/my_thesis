@@ -31,9 +31,15 @@ Open addressing hash tables allow no more than a single value per bucket. When a
 
 %sxhma gia cuckoo hashing 
 
-Hopscotch hashing combines linear probing and cuckoo hashing. First , buckets are traversed until an empty bucket is found. If that bucket is in the neighborhood of the initially mapped bucket, the value is placed there, just as in linear probing. If all empty bucket is outside the neighborhood, values are moved in a sequence of hops, effectively moving the empty slot closer and closer to the neighborhood of the initial bucket.
+Hopscotch hashing combines linear probing and cuckoo hashing. First , buckets are traversed until an empty bucket is found. If that bucket is in the neighborhood of the initially mapped bucket, the value is placed there, just as in linear probing. If the empty bucket is outside the neighborhood, values are moved in a sequence of hops, effectively moving the empty slot closer and closer to the neighborhood of the initial bucket.
 
 %sxma gia hopscotch hasing
+\begin{figure}
+ \centering
+  \includegraphics[scale=0.5]{hopscotch_hashing.png}
+\caption{Example of an insertion in hopscotch hashing. Here we try to insert value 6 and the first empty bucket is found at index 13, outside the neighbourhood of bucket 6. We then find out that w an index 11 can be displaced to the empty bucket and we place it there. Now the empty bucket is at index 11 wich is still far from 6. Subsequently, by switching places with buckets 9 and 6, the empty bucket is finally at index 6 and the new value can be inserted }
+\end{figure}
+
 
 \subsection{Resizing}
 
@@ -56,6 +62,12 @@ The global lock mechanism is simple to implement but it introduces a sequential 
 We then try to permit more concurrency by used a fixed number of locks , instead of a single one. We introduce an array of spinlocks with length L, with each lock protecting a number of buckets. We determine which lock is responsible for each bucket by simply mapping the index of the bucket on the array of locks. As the table grows, the number of locks remains the same ,so each lock is responsible for more buckets.
 
 %sxhma apo to vivlio tou shavit
+\begin{figure}
+ \centering
+  \includegraphics[scale=0.5]{striped_hash_set.png}
+\caption{A representation of the striped hash set}
+\end{figure}
+
 
 Having more than one locks means more than one threads can proceed  successfully and this results to less contention, more concurrency and improved performance. Increasing the number of locks , closer and closer to the number of buckets, seems to improve throughput. However, if we want to keep the number of locks equal to the number of buckets, as the table increases in size, we need to be able to resize the lock array as well, which is not straight forward.
 
@@ -69,9 +81,14 @@ All the above mentioned algorithms use locks to enforce synchronization and ther
 
 The algorithm is based on a lock-free linked list , implemented by Michael \cite{lock_free_list} to store the values. The buckets, kept in a single array, are now references to specific nodes in the list, representing the start of the particular bucket, effectively working as short-cuts into the list. As the list grows, we introduce new buckets that split the older ones in half, keeping their size bellow a maximum value. In order to do this however, the list must be kept ordered according to a recursive split order, as described next.
 
-Split ordering in fact the reverse bit representation of values, kept in ascending order. The goal here is to split each bucket by inserting a new one, without having to rearrange anything else. The following figure explains how split ordering achieves just that.
+Split ordering is in fact the reverse bit representation of values, kept in ascending order. The goal here is to split each bucket by inserting a new one, without having to rearrange anything else. The following figure explains how split ordering achieves just that.
 
 % figure apo th diafania kai exhghsh
+\begin{figure}
+ \centering
+  \includegraphics[scale=0.5]{split_ordered_1.png}
+\caption{This figure explains how split ordeding manages to effectively split a bucket in half.In part a , the list consists of two buckets. Above each node is it's split-ordered key, which is the reversed bit representation of each value. Square nodes are sentinel nodes, depicting the start of each bucket. When the table capacity grows from 2 to 4 in  part b, two new buckets are inserted, spliting the older one in half}
+\end{figure}
 
 There are some extra things to note here that illustrate why this specific type of ordering is the ideal for our need. Imagine a thread trying to search for the value 6 in the hash table depicted in part a. The capacity ( the number of buckets is 2) so and values 6 hashes to bucket zero. The thread starts traversing the list and while being at node value 4, a delay occurs. During that delay, capacity is double and a new bucket (bucket 2) is inserted between values 4 and 6, splitting bucket zero in half. As seen above, 2 is prior to 6 according to split ordering, and that mean that traversal well go past 2 and keep looking until it successfully finds the value 6. This depicts a key idea of the algorithm: when the table's capacity is doubled from 2\textsuperscript{i} to 2\textsuperscript{i+1}, a buckets b is split in half and those elements with values k for witch k mod 2\textsuperscript{i+1} =b  remain in bucket b while the others migrate to bucket b + 2\textsuperscript{i}. The algorithm ensures that these two bucket are positioned one after an other, so that in order to split the bucket we don’t really have to move any node around, but instead we only need to let the new bucket start after the first group of items and before the second.
 
@@ -82,10 +99,20 @@ In order to keep track of the load factor, we update a shared variable on every 
 Bellow follows an example of how adding a new value in the hash table increases capacity and introduces new buckets.
 
 % figure gia insert apo diafanies kai exhghsh 
+\begin{figure}
+ \centering
+  \includegraphics[scale=0.5]{split_ordered_2.png}
+\caption{Example of an insertion in the split ordered list. At part a , the bucket 2 is uninitialized. Inserting value 10, initializes the bucket, inserting a sentinel node in the list, before the actuall insertion of 10 at part d}
+\end{figure}
 
 Note that unused buckets are uninitialized. The sentinel nodes for each bucket are only inserted when it is actually needed, that is when this buckets holds at least one value. When initializing a bucket, we might also need to recursively initialize other buckets that come before it as shown bellow
 
 % figure gia initialization apo diafanies
+\begin{figure}
+ \centering
+  \includegraphics[scale=0.5]{split_ordered_3.png}
+\caption{Example of recursive initialization of buckets, before insertion of value 7}
+\end{figure}
 
 At its lower level, this implementation utilizes a lock free list. Each thread hash a set of three private variables curr, prev and next, each consisting of a pointer to a node, along with a mark bit. These pointers traverse the list to find the appropriate locations for an insertion or deletion and then the thread attempts to atomically modify the list, using Compare And Swap operations
 
@@ -101,6 +128,11 @@ Lookup operations are quite simple. The value is hashed using the first hash fun
 The basic idea behind cuckoo hashing is better shown during the insertion operation. We first hash the value using the first hash function and insert it on the appropriate bucket. If that bucket was initially empty, the process is over. If not, the previous value stored in that bucket is evicted, and we then insert it  on the other hash table, using the other hash function, possibly evicting another value in the process and so on, until an empty bucket is found.
 
 % eikona gia cuckoo hashing insertion.. apo pou?
+\begin{figure}
+ \centering
+  \includegraphics[scale=0.5]{cuckoo_hashing.png}
+\caption{Insertion in cuckoo hashing. Trying to insert value 14, we find both apropriate bucket taken by values 3 and 23. Thus, a sequence of displacements is triggered, ending when value 39 is inserted to the previously empty bucket at Table[1][6] }
+\end{figure}
 
 The chain of evictions and insertions can grow too long if either the table is too full and no empty buckets can be found easily, or the sequence of displacements form a circle, looping over the same buckets. For this reason, we set an upper limit on the number of evictions triggered by a single insertion. If that limit is exceeded, the table needs to be resized.
 
@@ -118,4 +150,39 @@ The result is a concurrent open-addressing algorithm that perform extremely well
 
 %results grafikes?
 
+\section{Non Blocking  open addressing}
 
+Last of all, we implemented another open addressing algorithm , introduced by Purchell and Haris \cite{non_blocking_open_addressing} that, unlike cuckoo hashing,  achieves non blocking access by using simple atomic operations.
+
+This algorithm resolves conflicts by using quadratic probing, along the subsequent values of <to polyonymo >.In this implementation, every bucket is accompanied by a probe bound, a value depicting the number of collision on the probe sequence. For example, when searching for a value on a bucket with a probe bound of 4 , we need to take up to 4 steps in the quadratic sequence to search for that value. Keeping a consistent view state of the probe bound can be challenging when multiple threads are inserting or deleting on the chain of collisions, as seen bellow
+
+% figure2 apo paper
+\begin{figure}
+ \centering
+  \includegraphics[scale=0.5]{non_blocking_1.png}
+\caption{Problems maintaining a shared bound, after a collision is removed from the probe sequence}
+\end{figure}
+
+For this reason, we add a scanning bit for each probe bound, that we are able to update atomically, along with the probe bound. During insertion, threads just attempt to clear the bit and increase the bound if necessary. During deletions, a thread that is trying to erase a collision uses this bit to make sure that no other concurrent  updates have been made and that the probe bound has decreased correctly.
+
+Every individual bucket holds the value and a state variable that helps resolve conflicts and synchronize concurrent operations, as described later. In order to prevent the ABA  problem, a version count is integrated along with each state variable.
+
+In order to perform an insertion, a thread takes the following steps: First, it finds an empty bucket, stores the value and sets the state of that bucket to inserting. Then , it scans the probe sequence, looking for other threads inserting the same key, or a completed insertion of that key  ( characterized with the state member) . If a completed insertion is found, the thread sets its own working bucket to empty and the operation fails. If any other unfinished insertion operations are detected, the thread assists in the process of setting the first insertion found in the process to member and setting all the rest to collided. This operation is done concurrently by all threads working on the probe sequence, resulting in a lock –free algorithm where the delay of a single thread will not stall the others.
+
+Bellow is an example of how the algorithm detects and avoids collisions.
+
+ %figure 9 apo paper
+\begin{figure}
+ \centering
+  \includegraphics[scale=0.5]{non_blocking_2.png}
+\caption{Inserting 12 using the lock-free algorithm.}
+\end{figure}
+
+The impact of the ABA problem is better understand from the following example of bad synchronization between inserting threads, that can be avoided with the use of version counters.
+
+%figure 7 apo paper
+\begin{figure}
+ \centering
+  \includegraphics[scale=0.5]{non_blocking_3.png}
+\caption{The effect of the ABA problem on concurrent assisting of operations.}
+\end{figure}
