@@ -45,6 +45,50 @@ One of the problems that occurs during the implementation of this algorithm in p
 
 In order to solve the problem, we chose to use modification counters, which we increase on every successful C-A-S and we incorporate them along with every pointer on the data structure. Atomic operations are now performed, not on the pointer but on the pair <pointer, modification counter> which is now treated as a single variable. Thus, we now have to treat pointers in a non traditional way, extracting them from the variable using bit shifting. Alternatively,  there have been put forward many ways to solve the ABA problem, for example with the use of reference counters, that doesn't require merging counters and pointers.
 
+The basic outline of the algorithm is shown bellow:
+
+\begin{lstlisting}
+
+void enqueue (Queue_t * Q , int value){
+	
+	node = allocate new node
+	node->value = value
+	node->next.ptr = NULL
+	while (1){
+		tail = Q->Tail
+		next = tail.ptr->next
+		if tail == Q->Tail
+			if next.ptr == NULL
+				if CAS(&tail.ptr->next,next, <node, next.count+1>)
+					break
+			else
+				CAS(&Q->Tail, tail, <next.ptr, tail.count+1>)  
+	}				
+	CAS(&Q->Tail, tail <node, tail.count+1>)	
+}
+
+boolean dequeue (Queue_t *Q, int * pvalue){
+	
+	while (1){
+		head = Q->Head
+		tail = Q->Tail
+		next = head->next
+		if head == Q->Head
+			if head.ptr == tail.ptr
+				if next.ptr == NULL
+					return False
+				CAS(&Q->Tail, tail, <next.ptr, tail.count+1>)
+			else
+				*pvalue= next.ptr->value
+				if CAS(&Q->head, head, <next.ptr, head.count+1>)
+					break
+	}
+	free(head.ptr)
+	return True
+}
+
+\end{lstlisting}
+
 \subsection{results}
 The result is a lock-free implementation,  that does not require central locking of the data structure and allows all threads to advance. Performance is not affected by random delays that a thread can have. It thus improved performance compared to the global lock implementation, especially when the number of concurrent threads exceeds the number of available cores.
 
@@ -78,11 +122,44 @@ Inserting a new node in the list includes 3 steps:
 2) Compare And Swap on Tail, to make it point to the new node
 3) Change the prev pointer of the next node.
 
+\begin{lstlisting}
+void enqueue ( Queue_t * Q, int value){
+	
+	node = allocate new node
+	node->value = val
+	while (1){
+		tail = Q->tail
+		node->next = <tail.ptr, tail.tag +1>
+		if CAS(&(Q->Tail), tail, <node, tail.tag+1>)
+			(tail.ptr)->prev = <node, tail.tag>
+			break
+	}
+
+}
+
+\end{lstlisting}
 \subsection{ABA and consistency}
 
 In order to avoid the ABA problem and spot inconsistencies, this implementation also uses modification counters, that are merged along with the pointers and are incremented in every successful C-A-S
 
 Any thread might take arbitrary time  between steps 2 and 3 and during this time more nodes might be inserted in the queue. Note however that, every time a node is successfully inserted in the queue(after successful C-A-S), the modification counter to be inserted next is incremented by one. Thus, pointers of consecutive nodes in the queue, will have consecutive modification counters. In this way, during a dequeue, if a prev pointer does not have the expected modification counter, FixList is called and the pointers are repaired.
+
+\begin{lstlisting}
+void fixList(Queue_t Q, tail, head){
+	curNode = tail
+	while((head == Q->Head) && (curNode != head){
+		curNodeNext = (curNode.ptr)->next
+		if (currNodeNext.tag != curNode.tag)
+			return
+		
+		nextNodePrev = (curNodeNext.ptr)->prev
+		if (nextNodePrev != <curNode.ptr, curNode.tag - 1>)
+			(curNodeNext.ptr)->prev = <currNode.ptr, currNode.tag -1>
+		
+		curNode = <curNodeNext.ptr, curNode.tag -1 >
+	}
+}
+\end{lstlisting}
 
 Note that there must be special care taken to ensure that there is always one dummy node in the list and Tail never goes past that node.
 
@@ -111,6 +188,53 @@ Flat combining is a layer of abstraction that can be used over a sequential stru
 2) Every thread checks the state of the locks and if it finds it unlocked, it tries only once to atomically set the lock. If the lock was locked already, the thread spins in its public record, waiting for a response.
 3) If it takes the lock, this thread is considered the new combiner. It then traverses the public records and executes the request on the data structure, one by one, writing back the results. Finally the thread releases the lock.
 
+The definition of the public record struct, as well as the main steps take by every thread are shown bellow:
+
+\begin{lstlisting}
+
+struct pub_record{
+	int pending
+	int operation
+	int value
+	int response
+} 
+
+int try_access(Queue_t Q, struct pub_record * pub, int operation, int value){
+	int thread_id
+	pub[thread_id].operation = operation
+	pub[thread_id].value = value
+	pub[thread_id].pending = 1
+	while (1){
+		if ( Q->lock){
+
+			while (!pub[thread_id].response) do nothing
+			
+			pub[tid].response = 0
+			return pub[tid].value
+		}
+		else{
+			if (__sync_lock_test_and_set(&(Q->lock), 1)) 
+				continue;
+			else{
+				for i=0 to number of threads
+					if pub[i].pending{
+						if pub[i].op ==1
+							do the actual enqueue
+						else
+							do the actual dequeue
+						pub[i].pending=0
+						pub[i].response=1
+					}
+				}
+				
+				pub[thread_id].response=0
+				Q->lock = 0
+				return pub[thread_id].value
+		}
+	}
+}				
+
+\end{lstlisting}
 % isws kana sxhmataki  gia th domh  san auto sto paper
 
 \subsection{Implementation characteristics and Benefits}
