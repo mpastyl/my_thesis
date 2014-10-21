@@ -68,9 +68,61 @@ Programming in a distributed memory environment can be quite challenged, because
 
 \subsection{Hybrid Memory}
 
+In a hybrid memory architecture, a groups of processors share a common local memory and, possibly some cache levels, similar to the shared memory architecture, whereas these groups of processors communicate with each other over a  an interconnection network. This a typical topology used in clusters, where several processor share a common address space and create nodes that can be inserted in the interconnection network.
+
 \begin{figure}
  \centering
   \includegraphics[scale=1.5]{hybrid_memory.jpg}
 \caption{Hybrid memory Architecture}
 \label{Hybrid memory architecture}
 \end{figure}
+
+
+\section{Synchronization}
+
+In parallel applications, threads will eventually need to communicate with each other or perform operations on a common data structure. In the shared memory model where every shared variable is easily accessible, it would be tempting to simply modify the shared memory as if threads were running in isolation, each with access to its own memory space. This would be entirely wrong since synchronizing concurrent accesses on shared memory locations is extremely important in parallel programming. The next figure shows a simple example of how the absence of synchronized access on a counter leads to inconsistencies. The counter is incremented once by every one of the two threads, but due to the patter of operations executed, it is eventually incremented only once.
+
+\begin{lstlisting}
+	
+Thread1                          Thread2
+
+                                 var2 = counter
+var1 = counter	
+
+                                 var2 = var2 +1
+                                 counter = var2
+
+var1 = var1 +1
+counter = var1
+
+\end{lstlisting}
+
+This problem cannot be solved with out hardware support, specifically atomic primitives that will ensure that an operation will be executed without being interrupted by a concurrent thread.  With the use of Fetch -And-Inc, incrementing a shared variable can be implemented safely, at the extra cost of locking  the memory bus until the variable is read and incremented. Other useful atomic operations, provided in most systems, are Test And Set(TAS) and Compare And Swap(CAS). Test and Set will atomically set a variable to 1 and return its previous value. Compare Snd Swap will compare the value store at a memory location with a giver value and only if they are equall, CAS will update that location to a new given value and return true. If not the operation will fail.
+
+\section{Memory consistency}
+
+Even if some operations can be executed atomically, the order between operations is not always guaranteed, and operations issued concurrently by many processors may actually take effect in an oder that cannot be determined in advance. In this way, no guaranteed ordering can be assumed when writing parallel programs. In an even more relaxed model, it is even possible for operations on the same core to be rearranged by the compiler or the processing unit, for various performance reasons. In that case, memory barriers can be used to make sure that operations all operations before the barrier have been completed.
+\section{Synchronization And Progress}
+
+Synchronization scheme in a parallel program  can be classified in one of three categories : blocking, lock-free and wait-free synchronization.
+
+Blocking approaches, usually use mutual exclusion to keep only one thread to access the critical section at a time. Lock-free approaches allow several threads to access the same data and introduce overheads mostly when there are actual conflicts. Wait-free approaches guarantee that every thread will finish it's operation within a finite number of steps, although that number can be high, and are better used in real-time applications where a maximum operation latency must not be surpassed. 
+ 
+ \begin{figure}
+
+ \centering
+
+  \includegraphics[scale=0.5]{progress_gar.png}
+
+\caption{Synchronization scheme classification}
+
+\label{progress_gar}
+
+\end{figure}
+
+
+\subsection{Blocking Synchronization}
+
+Most of the times, blocking synchronization is achieved with the use of semaphores and locks. Almost all locks use a Test-And-Set atomic primitive to set a memory location. If that memory location is set,  and the thread that sets that location form 0 to 1 is considered as the lock owner. The use of a lock over a section of code is the easiest way to ensure that only one thread will access that section of code (critical section) at a given time.
+
+In it's simplest form, setting a lock consists of  continuously executing TAS on the same memory location until the value return( the value in the memory location before setting it) is zero. This will cause heavy bus traffic, since every TAS will lock the buss until it is executed, along with heavy cache coherence protocol traffic, since every TAS is essentially a write that will invalidate all other copies of the lock, including the owner's. For this reason , a basic improvement is the uses of a Test and Test And Set (TTAS) lock, where the value of the lock is first read locally and a thread will attempt to set the lock with a TAS only if the value read is zero. Even in that case though, constantly reading the value of shared variable will cause substantial buss and cache coherence traffic. That's why it common to implement some sort of back off mechanism, where a thread that found the lock taken, will wait some time before attempting to check it again.
