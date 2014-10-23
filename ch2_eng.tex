@@ -250,10 +250,20 @@ The next diagram compares the number of C-A-S operations( both successful and fa
 \caption{Total successful and failed C-A-Ss for the two lock-free implementations}
 \end{figure}
 
+All in all, the optimistic optimization seems to contribute a slight amount of pseedup, compared to the Michael Scott queue, as shown in figure \ref{queue_optimistic_perf}. The overall performance of the concurrent queue has significantly increased since the naive global lock algorithm, but many problems still remain. The very small critical section makes synchronization a high fraction of the total cost. Adding backoff was a step forward but it would potentially introduce heavy overheads for some threads.
+
+
+\begin{figure}
+ \centering
+  \includegraphics[scale=0.5]{queue_optimistic_perf.png}
+\caption{The performance of the optimistic approach}
+\label{queue_optimistic_perf}
+\end{figure}
+
 \section{Flat Combining}
 \subsection{Introduction}
 
-The two proceeding implementations follow a fine thread approach, where every thread has access to the data structure and they are trying to achieve performance through high parallelization. As more treads are free to operate on the data structure, performance is expected to be better that locking approaches that block the progress of some threads. We next present the principles of flat combining, a programming approach by Hendler, Incxe and Shavit \cite{flat_combining} that goes against the above mentioned statements.
+The two previous implementations followed a fine grain approach, where every thread has access to the data structure and they are trying to achieve performance through high parallelization. As more treads are free to operate on the data structure, performance is expected to be better that locking approaches that block the progress of some threads. We next present the principles of flat combining, a programming approach by Hendler, Incxe and Shavit \cite{flat_combining} that goes against the above mentioned statements.
 
 In particular, the authors claim that the point at which the cost of synchronization between threads exceeds the benefit from high parallelization, is at a lower lever of concurrency than expected. Flat combining is based on a synchronization scheme where each thread locks  the data structure in an extremely low-cost way, gathers information on the operations trying to be executed on the queue by the other threads and then does the operations in their place. The result is an implementation with low synchronization cost and better cache performance, overcoming the drawbacks of blocking and low parallelization.
 
@@ -263,6 +273,14 @@ Flat combining is a layer of abstraction that can be used over a sequential stru
 1) Every thread publishes the operations it is trying to perform on the structure, along with any parameters, on its corresponding public record. These records can be in an array, for fast read/write or in linked list with dynamic size, proportional to the number of active threads.
 2) Every thread checks the state of the locks and if it finds it unlocked, it tries only once to atomically set the lock. If the lock was locked already, the thread spins in its public record, waiting for a response.
 3) If it takes the lock, this thread is considered the new combiner. It then traverses the public records and executes the request on the data structure, one by one, writing back the results. Finally the thread releases the lock.
+
+
+\begin{figure}
+ \centering
+  \includegraphics[scale=0.7]{flat_combining_basic.png}
+\caption{The basic synchronization scheme of flat combining}
+\label{flat_combining_basic}
+\end{figure}
 
 The definition of the public record struct, as well as the main steps take by every thread are shown bellow:
 
@@ -317,7 +335,7 @@ int try_access(Queue_t Q, struct pub_record * pub, int operation, int value){
 From the way flat combining works, certain advantages can be concluded:
 1)Since only the combiner has access to the structure, operations can be optimized with the best sequential algorithm, without minding synchronization and concurrency. This even allows us to implement concurrent structures, such as pairing heaps, that are otherwise difficult to implement using fine grain synchronization, by applying flat combining over already existent sequential data structures.
 2) in some cases, the combiner can use some smart way to group the request and make the access to the structure faster and more efficient. For example, in concurrent stacks, a combiner can perform elimination between a concurrent enqueue and a concurrent dequeue. In our queue implementation, we used fat nodes to group data, as we explain later on.
-3) The combining way of accessing the structure can lead to better cache utilization.
+3) The combined way of accessing the structure by a single thread can lead to better cache utilization.
 4) Using a global lock to isolate the structure makes programming, as well as debugging, much easier.
 
 It is also important to note that flat combining, as a layer of abstraction that ensures synchronization, can bee used as it is over different data structured. Of course, not all data structures are benefited by flat combining. For example, if the cost of a single operation in a search tree is \textgreek{Θ} (logn), using flat combining, the cost of k operations is in general \textgreek{Θ} (klogn), while we could  use parallel threads that execute operations independently on different parts of the tree in \textgreek{Θ} (longn) total time.
@@ -325,22 +343,63 @@ It is also important to note that flat combining, as a layer of abstraction that
 FIFO Queues in particular, seem to benefit by flat combining, given that they already allow low levels of concurrency ( only two access points). In our implementation, we organized public records in an array and used fat nodes, where every node can hold up to 16 values. Therefore, we only need to add one node in the queue and swap the Tail pointer only once, for every 16 values inserted. We also used two independent instances of flat combining, one for enqueues and one for dequeues, in order to exploit the maximum concurrency allowed.
 
 \subsection{First results}
- %grafikes gia fc se sxesh me ta alla
  
+\begin{figure}
+ \centering
+  \includegraphics[scale=0.7]{queue_fc_queue_perf.png}
+\caption{Perfromance of flat combining, compared to the other approaches}
+\label{queue_fc_queue_perf}
+\end{figure}
+
+Figure \ref{queue_fc_queue_perf} shows the overall performance of flat combining compared to the other approaches. Perfomance seems to benefit greatly from the way batches of work are done by a single thread and the lightwheight synchronization scheme. Especially inside the node, a fairly good scalling is noted. Trying to utilize that benefit even more, we keep the combiner iterating over the the public records more than once. Figure \ref{queue_fc_queue_loops} shows that assigning more work to every combiner, althought harmfull when only a few threads are utillized, offers a slight speedup when more than 4 threads are used. Note however that this further increases the potential latency of the thread that becomes a combiner. 
+
+
+\begin{figure}
+ \centering
+  \includegraphics[scale=0.7]{queue_fc_queue_loops.png}
+\caption{The effects of keeping the combiner iterating more than once over the public records}
+\label{queue_fc_queue_loops}
+\end{figure}
+
 \subsection{Optimizations}
 %1 dedicated combiner
+
+
 From the analysis of the algorithm we can deduct that every thread can, in theory, access the queue and alter its state. That means that the nodes of the queue can be in the cache memory of any thread, which in turn leads to increased cache misses and long delays.
 
-For this reason, we alter the existing implementation, so that only a given thread for each operation(enqueue/dequeue) can become a combiner. Essentially, all threads are being server by only two specific threads. These two threads have less cache misses when they access the structure.
+By extending that idea, we can see that it might be better to have a dedicated combiner, residing in a specific core that will serve all requests. This way references on the lists nodes will always hit
 
-The result is a constant improvement in performance, that corresponds  to less cache misses and better locality. Specifically on dunnington, this improvement is even more apparent.
 
-%2 hybird
-We next  studied the behavior of these algorithms in NUMA architectures. From the general performance of these algorithms, it is obvious that when threads are no longer contained in one NUMA node, performance suffers significantly, due to the fact that threads no longer share the same L2 cache. Moreover, atomic operations and specifically Compare-And-Swap), are much more costly when they need to synchronize threads that belong to different NUMA nodes.
+The result, shown in figure \ref{queue_fc_dedicated_perf}, is a constant improvement in performance, that corresponds  to less cache misses and better locality.Again, however, leaving the package significally degrades performane and in fact, the overhead of communication between packages quickly becomes the dominant cost.
+
+\begin{figure}
+ \centering
+  \includegraphics[scale=0.7]{queue_fc_dedicated_perf.png}
+\caption{The speed up achieved by using a dedicated combiner}
+\label{queue_fc_dedicated_perf}
+\end{figure}
+
+Addressing that problem,we can see that the flat combining synchronization scheme, as it is, introduces a lot of communication over different nodes, as the combiners need to read and modify the publication record of a thread that is on a different package.
+
 
 The previously implemented flat combining algorithm is not NUMA-aware and cannot deal with the problems mentioned above. For this reason, we designed and implemented a hybrid implementation that combines previous algorithms, taking architecture into account, in order to achieve better performance.
 
 The implementation that was eventually chosen  consists of two stages. In the first stage, we use flat combining in every NUMA node. Threads of the same node are synchronized to come up with a combiner. In the second stage, combiners from each node are further synchronized to access the queue. In the second stage we tried several synchronization schemes ( Michael-Scott queue, a second level of flat combining). Eventually, the best performance for the given architecture was achieved by a simple TTAS global lock.
 
-The result was a further improvement of the performance,
+\begin{figure}
+ \centering
+  \includegraphics[scale=0.7]{queue_fc_hybrid_basic.png}
+\caption{The use basic layout of the hybrid aproach}
+\label{queue_fc_hybrid_basic}
+\end{figure}
+
+The result was a limited improvement of the performance when threads reside across several nodes, shown in figure \ref{queue_fc_hybrid_perf}.
+
+ 
+\begin{figure}
+ \centering
+  \includegraphics[scale=0.7]{queue_fc_hybrid_perf.png}
+\caption{The use performance of the hybrid aproach compared to other flat combining schemes}
+\label{queue_fc_hybrid_perf}
+\end{figure}
 
