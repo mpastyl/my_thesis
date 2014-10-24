@@ -4,7 +4,7 @@
 \chapter{FIFO Queues}
 \section{Introduction}
 
-FIFO Queues are one of the most widely used data structures. They have been studied thoroughly and are used in many projects. Applications of queues range from webservers to interruption managing, inter-process communication, cpu schedulers and many more. They are essential on any aplication that requires some sort of First in First out ordering of data.
+FIFO Queues are one of the most widely used data structures. They have been studied thoroughly and are used in many projects. Applications of queues range from web servers to interruption managing, inter-process communication, CPU schedulers and many more. They are essential on any application that requires some sort of First in First out ordering of data.
 
 Queues are usually implemented by linked lists and support two simple operations; enqueue and dequeue, shown in figure \ref{basic_enqueue} and \ref{basic_dequeue}
 
@@ -23,9 +23,9 @@ Queues are usually implemented by linked lists and support two simple operations
 \label{basic_dequeue}
 \end{figure}
 
-In many applications, there is the need of having multiple threads, communicating through a shared queue, that is often needed to serve millions of operations per second. Concurrent queues can be quite handy in a scenario where multiple producer threds create work items, that need to be consumed by several worker threads. Producers may create many items in a burst, while consumer threads are receiving them at a slower rate, so the excess of times need to be organized in an efficient manner. Although situations like tha can be quite common, implementing an efficent queue that allows concurrent acess from multiple threads can be quite challenging. For this reason, concurrent FIFO Queue implementations attract theoretical, as well as practical interest. 
+In many applications, there is the need of having multiple threads, communicating through a shared queue, that is often needed to serve millions of operations per second. Concurrent queues can be quite handy in a scenario where multiple producer threads create work items, that need to be consumed by several worker threads. Producers may create many items in a burst, while consumer threads are receiving them at a slower rate, so the excess of times need to be organized in an efficient manner. Although situations like that can be quite common, implementing an efficient queue that allows concurrent access from multiple threads can be quite challenging. For this reason, concurrent FIFO Queue implementations attract theoretical, as well as practical interest. 
  
-In order to maintain the coherence of the data structure in a multithreaded environment, synchronization between threads is needed. An example of what could go wrong without proper synchronization is shown in figure \ref{queue_no_sync} .Queues are a structure that, by its nature, allows low levels of concurrency, since all reads and writes are applied on Head and Tail, rendering these locations as hotspots. Therefore, we expect low scalability, as the number of parallel threads increases.
+In order to maintain the coherence of the data structure in a multi-threaded environment, synchronization between threads is needed. An example of what could go wrong without proper synchronization is shown in figure \ref{queue_no_sync} .Queues are a structure that, by its nature, allows low levels of concurrency, since all reads and writes are applied on Head and Tail, rendering these locations as hot-spots. Therefore, we expect low scalability, as the number of parallel threads increases.
 
 \begin{figure}
  \centering
@@ -47,15 +47,15 @@ In our first implementation we adopted a naive, coarse grained strategy. We intr
 \end{figure}
 
 
-Another reason for this poor performance is that the naive global lock implementation cause heavy cache coherence protocol traffic and bus congetion. Even after we implemented and used a TTAS( Test and Test And Set) lock that reduces traffic due to the cache coherence protocol, delays were still high. The main reason is that constantly reading the lock to check it's state produces heavy traffic. Also, since the lock is changing owners frequently, pointers on the list will ping pong back and forth across different caches, causing a lot of cache misses. 
+Another reason for this poor performance is that the naive global lock implementation cause heavy cache coherence protocol traffic and bus congestion. Even after we implemented and used a TTAS( Test and Test And Set) lock that reduces traffic due to the cache coherence protocol, delays were still high. The main reason is that constantly reading the lock to check it's state produces heavy traffic. Also, since the lock is changing owners frequently, pointers on the list will ping pong back and forth across different caches, causing a lot of cache misses. 
 
-A sollution to that problem is the introduction of backoff: when a thread finds a lock taken, it wont try to check its state again for a while, but will instead wait on loop for a few iterrations. This way, the shared memory location is not polled so often,benefiting the generall throughput as shown in figures \ref{queue_global_backoff_1.png} and \ref{queue_global_backoff_2.png}.
+A solution to that problem is the introduction of backoff: when a thread finds a lock taken, it wont try to check its state again for a while, but will instead wait on loop for a few iterations. This way, the shared memory location is not polled so often,benefiting the general throughput as shown in figures \ref{queue_global_backoff_1.png} and \ref{queue_global_backoff_2.png}.
 
 
 \begin{figure}
  \centering
   \includegraphics[scale=0.7]{queue_global_backoff_1.png}
-\caption{The ammount of backoff affects throughput. Points on the horizontal axis are the number of itterations spend waiting on a loop. Red and green lines represent of threads inside tha same node, while in blue and yellow lines, threads are placed across multiple nodes}
+\caption{The amount of backoff affects throughput. Points on the horizontal axis are the number of iterations spend waiting on a loop. Red and green lines represent of threads inside the same node, while in blue and yellow lines, threads are placed across multiple nodes}
 \label{queue_global_backoff_1}
 \end{figure}
 
@@ -66,9 +66,9 @@ A sollution to that problem is the introduction of backoff: when a thread finds 
 \label{queue_global_backoff_2}
 \end{figure}
 
-We can easily see that in generall, longer backoff generally increases overall throughput. The reason is more than the reduced traffic caused from polling on the lock. A high backoff means that threads that not manage to take the lock will become inactive for a while, but the thread that takes the lock will quickly complete the critical section (which is very small) and will propably return to attempt another operation very soon. At that time, the other threads will be innactive, spending time backing off, and that thread will probably take the lock again, hiting L1 cache for the memory location of the lock, the Head and the Tail. This certainly improves perfrormance by reducing cache misses, but makes the lock quite unfair: a thread that finds a lock taken may have to wait a long time before seting it to perform a single operation, while a thread that takes the lock will probably retake it several times in a row.   
+We can easily see that in general, longer backoff generally increases overall throughput. The reason is more than the reduced traffic caused from polling on the lock. A high backoff means that threads that not manage to take the lock will become inactive for a while, but the thread that takes the lock will quickly complete the critical section (which is very small) and will probably return to attempt another operation very soon. At that time, the other threads will be inactive, spending time backing off, and that thread will probably take the lock again, hitting L1 cache for the memory location of the lock, the Head and the Tail. This certainly improves performance by reducing cache misses, but makes the lock quite unfair: a thread that finds a lock taken may have to wait a long time before setting it to perform a single operation, while a thread that takes the lock will probably retake it several times in a row.   
 
-Another characteristic behavior is that throughput declines dramatically when the number of parallel threads exceeds the number of available cores. In this case, more than one threads share the same core and if a thread holding the lock is scheduled out, no other thread is advancing until that threads regains the cpu and unsets the lock. This is a general problem with locking implementations: If a thread inside the critical section is delayed, the progress of all other threads is halted and performance suffers significantly, making blocking algorithms not suitable for real-time applications.
+Another characteristic behavior is that throughput declines dramatically when the number of parallel threads exceeds the number of available cores. In this case, more than one threads share the same core and if a thread holding the lock is scheduled out, no other thread is advancing until that threads regains the CPU and unsets the lock. This is a general problem with locking implementations: If a thread inside the critical section is delayed, the progress of all other threads is halted and performance suffers significantly, making blocking algorithms not suitable for real-time applications.
 
 
 For this reason, in the field of data structures in general and FIFO Queues in particular, great effort has been applied to come up with efficient, lock free implementations. One of the first, well known, successful implementation of a lock-free FIFO Queue is from Michael and Scott \cite{msqueue} and it serves as a base line for all further efforts.
@@ -97,7 +97,7 @@ At any given time during the execution of a thread, the values of Head and Tail 
 
 One of the problems that occurs during the implementation of this algorithm in particular and of algorithms that use C-A-S in general, is the so called ABA problem. In summary, the problem is described by the following scenario: A process observes that a memory location is in a state A and then is halted for a while. In the meantime, another process alters the state of the memory location to B, then back to A again. The initial process will find that the state of the memory location is A and a CAS will succeed, without knowing that the state has changed in the meantime. This problem is related to the lack of a garbage collector that would ensure that we could not release a memory segment that is still being referenced by a thread.
 
-In order to solve the problem, we chose to use modification counters, which we increase on every successful C-A-S and we incorporate them along with every pointer on the data structure. Atomic operations are now performed, not on the pointer but on the pair \textless pointer, modification counter\textgreater which is now treated as a single variable. Thus, we now have to treat pointers in a non traditional way, extracting them from the variable using bit shifting wich causes overheads and make programming more difficult and error prone. 
+In order to solve the problem, we chose to use modification counters, which we increase on every successful C-A-S and we incorporate them along with every pointer on the data structure. Atomic operations are now performed, not on the pointer but on the pair \textless pointer, modification counter\textgreater which is now treated as a single variable. Thus, we now have to treat pointers in a non traditional way, extracting them from the variable using bit shifting which causes overheads and make programming more difficult and error prone. 
 
 Alternatively,  there have been put forward many ways to solve the ABA problem, for example with the use of reference counters, that doesn't require merging counters and pointers.
 
@@ -154,7 +154,7 @@ boolean dequeue (Queue_t *Q, int * pvalue){
 
 The result is a lock-free implementation,  that does not require central locking of the data structure and allows all threads to advance. The absence of a lock leaves us with one less, heavily contested shared memory location to worry about. Performance is not affected by random delays that a thread can have, achieving robustness. Especially during over subscription, performance does not degrade like global locks' does.
 
-On the other hand, CAS operations have a substantial cost, greater than a simple store. This store is even greater when the atomic operation is performed over different NUMA node, hence the suden drop in performance when threads leave the package. Moreover, failing a CAS means that the operation needs to start over, stalling this perticular thread, while others progress.  
+On the other hand, CAS operations have a substantial cost, greater than a simple store. This store is even greater when the atomic operation is performed over different NUMA node, hence the sudden drop in performance when threads leave the package. Moreover, failing a CAS means that the operation needs to start over, stalling this particular thread, while others progress.  
 
 \begin{figure}
  \centering
@@ -163,7 +163,7 @@ On the other hand, CAS operations have a substantial cost, greater than a simple
 \label{queue_msqueue_CAS_contention}
 \end{figure}
 
-The number of CASs neet to perform an operation increases with contention, as shown in figure \ref{queue_msqueue_CAS_contention}. Again, we try to reduce contention by introducing backoff after a threads fails to perform a CAS. The results shown in figure \ref{queue_msqueue_backoff} suggest a modern amount of speedup, once again, at the expense of fairness. 
+The number of CASs needed to perform an operation increases with contention, as shown in figure \ref{queue_msqueue_CAS_contention}. Again, we try to reduce contention by introducing backoff after a threads fails to perform a CAS. The results shown in figure \ref{queue_msqueue_backoff} suggest a modern amount of speedup, once again, at the expense of fairness. 
 
 \begin{figure}
  \centering
@@ -176,7 +176,7 @@ The number of CASs neet to perform an operation increases with contention, as sh
 \section{Optimistic Queue}
 
 \subsection{introduction}
-One of the drawbacks of lock-free approaches is that, each time an atomic operation fails, the execution start back from the top. Moreover, failed atomic operations are costly, due to the synchronization barrier they introduce. Especially in Michael Scott Queue, since both two atomic operations need to be successful in order to complete an enqueue, it is quite common for a thread to repeat execution again and again until it is done correctly. For this reason, we would like to reduce the number of synchronization points ,e.g. the number of atomic operations.
+One of the drawbacks of lock-free approaches is that, each time an atomic operation fails, the execution start back from the top. Moreover, failed atomic operations are costly, due to the synchronization barrier they introduce. Especially in Michael Scott Queue, since both two atomic operations need to be successful in order to complete an enqueue, it is quite common for a thread to repeat execution again and again until it is done correctly. For this reason, we would like to reduce the number of synchronization points ,i.e. the number of atomic operations.
 
 A solution to this problem is introduced by the next algorithm we implemented, by Ladan-Mozes and Shavit \cite{optimistic}. This implementation follows an optimistic approach ( which is why we will refer to this implementation as optimistic queue), in a sense that it runs quickly on the common case where there is no conflict and leaves the costly operations for the case where an inconsistency is spotted. In particular, one of the two C-A-S operations, during enqueue, is replaced with a simple local store, making sure that we correct the data structure in case it is inconsistent.
 
@@ -250,7 +250,7 @@ The next diagram compares the number of C-A-S operations( both successful and fa
 \caption{Total successful and failed C-A-Ss for the two lock-free implementations}
 \end{figure}
 
-All in all, the optimistic optimization seems to contribute a slight amount of pseedup, compared to the Michael Scott queue, as shown in figure \ref{queue_optimistic_perf}. The overall performance of the concurrent queue has significantly increased since the naive global lock algorithm, but many problems still remain. The very small critical section makes synchronization a high fraction of the total cost. Adding backoff was a step forward but it would potentially introduce heavy overheads for some threads.
+All in all, the optimistic optimization seems to contribute a slight amount of speedup, compared to the Michael Scott queue, as shown in figure \ref{queue_optimistic_perf}. The overall performance of the concurrent queue has significantly increased since the naive global lock algorithm, but many problems still remain. The very small critical section makes synchronization a high fraction of the total cost. Adding backoff was a step forward but it would potentially introduce heavy overheads for some threads.
 
 
 \begin{figure}
@@ -277,12 +277,12 @@ Flat combining is a layer of abstraction that can be used over a sequential stru
 
 \begin{figure}
  \centering
-  \includegraphics[scale=0.7]{flat_combining_basic.png}
+  \includegraphics[scale=0.5]{flat_combining_basic.png}
 \caption{The basic synchronization scheme of flat combining}
 \label{flat_combining_basic}
 \end{figure}
 
-The definition of the public record struct, as well as the main steps take by every thread are shown bellow:
+The definition of the public record structure, as well as the main steps take by every thread are shown bellow:
 
 \begin{lstlisting}
 
@@ -351,7 +351,7 @@ FIFO Queues in particular, seem to benefit by flat combining, given that they al
 \label{queue_fc_queue_perf}
 \end{figure}
 
-Figure \ref{queue_fc_queue_perf} shows the overall performance of flat combining compared to the other approaches. Perfomance seems to benefit greatly from the way batches of work are done by a single thread and the lightwheight synchronization scheme. Especially inside the node, a fairly good scalling is noted. Trying to utilize that benefit even more, we keep the combiner iterating over the the public records more than once. Figure \ref{queue_fc_queue_loops} shows that assigning more work to every combiner, althought harmfull when only a few threads are utillized, offers a slight speedup when more than 4 threads are used. Note however that this further increases the potential latency of the thread that becomes a combiner. 
+Figure \ref{queue_fc_queue_perf} shows the overall performance of flat combining compared to the other approaches. Performance seems to benefit greatly from the way batches of work are done by a single thread and the light-weight synchronization scheme. Especially inside the node, a fairly good scaling is noted. Trying to utilize that benefit even more, we keep the combiner iterating over the the public records more than once. Figure \ref{queue_fc_queue_loops} shows that assigning more work to every combiner, although harmful when only a few threads are utilized, offers a slight speedup when more than 4 threads are used. Note however that this further increases the potential latency of the thread that becomes a combiner. 
 
 
 \begin{figure}
@@ -370,7 +370,7 @@ From the analysis of the algorithm we can deduct that every thread can, in theor
 By extending that idea, we can see that it might be better to have a dedicated combiner, residing in a specific core that will serve all requests. This way references on the lists nodes will always hit
 
 
-The result, shown in figure \ref{queue_fc_dedicated_perf}, is a constant improvement in performance, that corresponds  to less cache misses and better locality.Again, however, leaving the package significally degrades performane and in fact, the overhead of communication between packages quickly becomes the dominant cost.
+The result, shown in figure \ref{queue_fc_dedicated_perf}, is a constant improvement in performance, that corresponds  to less cache misses and better locality. Again, however, leaving the package significantly degrades performance and in fact, the overhead of communication between packages quickly becomes the dominant cost.
 
 \begin{figure}
  \centering
@@ -388,7 +388,7 @@ The implementation that was eventually chosen  consists of two stages. In the fi
 
 \begin{figure}
  \centering
-  \includegraphics[scale=0.7]{queue_fc_hybrid_basic.png}
+  \includegraphics[scale=0.5]{queue_fc_hybrid_basic.png}
 \caption{The use basic layout of the hybrid aproach}
 \label{queue_fc_hybrid_basic}
 \end{figure}
