@@ -77,6 +77,55 @@ In a hybrid memory architecture, a groups of processors share a common local mem
 \label{Hybrid memory architecture}
 \end{figure}
 
+\section{Memory coherence}
+
+Multiple levels of cache memory are quite common in processing systems, as they reduce the cost of memory references by keeping copies of recently uses memory locations close to the processor. This replication of memory locations can cause many problems, even in uniprocessor systems when a Direct Memory Access( DMA) mechanism is involved. In multiprocessor systems, several processor may access the same memory location concurrently, creating many copies that reside in multiple caches. If that memory location is only read, it can be shared through the processor without a problem. If however that location is modified by one of the processors, all the others must be notified of the change, or else they might end up using an outdated image of that memory location. Therefore, a certain protocol , called memory coherence protocol, must be followed to ensure that all processors are accessing the update value of a memory location. The most widely used memory coherence protocol is the MESI protocol.
+
+In MESI protocol, every cache line is marked with one of the following states:
+%bullets
+
+\textbf{Modified}. The cache line is present only in the current cache and it's value has been modified from the value in the main memory. The cache is required to write the value back to the main memory at some time in the future, before allowing any other thread to read that memory location from the memory.
+
+\textbf{Exclusive}. The cache line is present only in this processor and it's value is the same as in main memory. The cache line will change to shared state, if read by another processor, or to modified state if written by that processor.
+
+\textbf{Shared}. The cache line may exist in many caches and it's value is the same as in the main memory.
+
+\textbf{Invalid}. The cache line is invalid.
+
+According to the state diagram depicted in figure \ref{mesi_protocol}, the MESI uses the above mentioned 4 states for every cache line to allow all processor to have a consistent view on all memory locations.
+
+\begin{figure} 
+ \centering 
+  \includegraphics[scale=0.7]{mesi_protocol.png} 
+\caption{State diagram of the MESI protocol. The transitions are labeled “action observed / action performed"} 
+\label{mesi_protocol} 
+\end{figure} 
+
+\section{Non Uniform Memory Access}
+
+Non Uniform Memory Access(NUMA)  is an architecture design where memory access time depends on the relative location of the memory location and the processor. In NUMA models, it is typical to create NUMA nodes or packages each with it's own fragment of main memory, while separate nodes are connected through a slower network.  Processors can quickly access their package's memory but require more time to access a memory location that resides on a different package. This model is beneficial to workloads where threads, or small groups of threads access the same data, a scenario quite common in servers.
+
+On the other hand, NUMA might perform badly when threads from different packages have access to the same data, partially because of the need for cache coherence. In NUMA, cache coherence traffic, such as the one produced by MESI protocol, is exchanged between cache controllers and the  need to keep several packages coherent may come in great cost. For this reason, some operating systems try to implement NUMA-friendly scheduling to keep communication between packages to a minimum.
+
+\section{System Configuration}
+
+The system we used to benchmark our implementations was the “Sandman” platform, a 32-core NUMA architecture with the following  characteristics.
+
+\begin{itemize}
+\item 4 packages (Intel(R) Xeon(R) E5-4620 @ 2.20GHz)
+\item 8 Cores per packages( 16 threads with hyperthreading)
+\item 32KB L1 cache per core
+\item 256KB L2 cache per core
+\item 16MB L3 cache per package
+\item257.931 MB RAM 
+\end{itemize}
+
+\begin{figure} 
+ \centering 
+  \includegraphics[scale=0.5]{sandman_architecture.png} 
+\caption{Sandman Platform} 
+\label{sandman_architecture} 
+\end{figure} 
 
 \section{Synchronization}
 
