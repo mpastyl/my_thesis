@@ -52,13 +52,20 @@ In a multiprocessor environment it is quite common for multiple threads to requi
    
 % edw tha moune oi alles ylopoihseis
 
-\section{ Locking  Approaches}
+\section{ Locking Approaches}
 
 We start by implementing the hash table as a table of nodes, with each node being the head of a simple linked list that we keep ordered. We protect the table with a simple spinlock. Each thread needs to acquire the spinlock before performing any operation ( insert, lookup or delete). 
 
 In order to ensure that every operation takes constant time, we need to keep the average number of items in every link list bellow a minimum. This is done by resizing the table , according to a certain policy. The resizing mechanism may trigger when the number of buckets that have grown beyond a certain threshold is large, or when the total ratio of inserted elements to the number of buckets exceeds a threshold. To perform the resize operation, a thread acquires the lock, checks if another thread has already resized the table and if not, proceeded to allocate a new table twice as big as the old one and then rehash every value from the old table into the new one.
 
-The global lock mechanism is simple to implement but it introduces a sequential bottleneck and performance is low. All threads spin on the same lock, even they are trying to access disjoint locations on the table . Moreover , since the critical section inside the lock is very small, the overhead of acquiring and releasing the lock becomes a large proportion of runtime.
+The global lock mechanism is simple to implement but it introduces a sequential bottleneck and performance is low, as shown in figure \ref{hashes_global_perf}. All threads spin on the same lock, even they are trying to access disjoint locations on the table . Moreover , since the critical section inside the lock is very small, the overhead of acquiring and releasing the lock becomes a large proportion of runtime.
+
+\begin{figure}
+ \centering
+  \includegraphics[scale=0.7]{hashes_global_perf.png}
+\caption{The performance of the naive global lock approach}
+\label{hashes_global_perf}
+\end{figure}
 
 We then try to permit more concurrency by used a fixed number of locks , instead of a single one. We introduce an array of spinlocks with length L, with each lock protecting a number of buckets. We determine which lock is responsible for each bucket by simply mapping the index of the bucket on the array of locks. As the table grows, the number of locks remains the same ,so each lock is responsible for more buckets, as shown in figure \ref{striped_hash_set}.
 
@@ -71,8 +78,21 @@ We then try to permit more concurrency by used a fixed number of locks , instead
 \end{figure}
 
 
-Having more than one locks means more than one threads can proceed  successfully and this results to less contention, more concurrency and improved performance. Increasing the number of locks , closer and closer to the number of buckets, seems to improve throughput. However, if we want to keep the number of locks equal to the number of buckets, as the table increases in size, we need to be able to resize the lock array as well, which is not straight forward.
+Having more than one locks means more than one threads can proceed  successfully and this results to less contention, more concurrency and improved performance. Increasing the number of locks , closer and closer to the number of buckets, seems to improve throughput and refuce latecny , as depicted in figures \ref{hashes_striped_through} and \ref{hashes_striped_latency}. However, if we want to keep the number of locks equal to the number of buckets, as the table increases in size, we need to be able to resize the lock array as well, which is not straight forward.
 
+\begin{figure}
+ \centering
+  \includegraphics[scale=0.7]{hashes_striped_through.png}
+\caption{Throughput for various numbers of locks}
+\label{hashes_striped_through}
+\end{figure}
+
+\begin{figure}
+ \centering
+  \includegraphics[scale=0.7]{hashes_striped_latency.png}
+\caption{Latency for various numbers of locks}
+\label{hashes_striped_latency}
+\end{figure}
 For this reason we then try to implement a refinable locking scheme, where locks can be dynamically increased to match the number of buckets. Here, we require mutual exclusion between resizing and updating, so we introduce a marked field owner, containing the id of the thread that is currently resizing. When a thread is trying to resize, it first atomically sets the mark bit and writes its id in the owner field. It then waits until no more updates are being performed(e.g. all the locks are unlocked). That way, all other threads that are trying to update, will find the marked bit of the owner value set and will not proceed to take any lock. The thread is now free to resize the table and the lock array, rehash every value into the new table and unset the marked bit. In this implementation, we also allow lookups to first search the value without taking a lock. This allows to sometimes successfully perform lookups, even during resizing. If the value is found, lookup returns that value. If not, it might be possible that the value was inserted but the thread could not access it yet, so the thread tries searching again, this time holding the lock. 
 
 The outline of the function used by every thread to acquire a lock is shown here, where we can see how the when the mark bit of the owner field is set, no one can acquire any locks.
@@ -99,7 +119,14 @@ void acquire(HashTable_t T , int x){
 
 \end{lstlisting}
 
-% results?
+The result is an increase in performance, because we exploit the finer grained syncronization. However, this imporovement comes with the cost of slower resizing. Increasing the number of locks means that we need more time to allocate the extra locks and more time to wait until all locks are free. The extra amount of time introduced is shown in figure \ref{hashes_refinable_resize}.
+ 
+\begin{figure}
+ \centering
+  \includegraphics[scale=0.7]{hashes_refinable_resize.png}
+\caption{The amount of time needed for every resize}
+\label{hashes_refinable_resize}
+\end{figure}
 
 \section { Split Ordered List}
 
@@ -143,7 +170,7 @@ Note that unused buckets are uninitialized. The sentinel nodes for each bucket a
 \label{split_ordered_3}
 \end{figure}
 
-The insert operatios looks very simple, simply initializing the bucket if needed and then insert the split-ordered key in the list starting from the node referenced by the apropriate bucket. Finaly, we check if the capacity need to be doubled. The same outline is followed by the lookup operation.
+The insert operations looks very simple, simply initializing the bucket if needed and then insert the split-ordered key in the list starting from the node referenced by the apropriate bucket. Finaly, we check if the capacity need to be doubled. The same outline is followed by the lookup operation.
 
 \begin{lstlisting}
 
@@ -174,7 +201,14 @@ int find(HashTable_t T, int key){
 
 At its lower level, this implementation utilizes a lock free list. Each thread hash a set of three private variables curr, prev and next, each consisting of a pointer to a node, along with a mark bit. These pointers traverse the list to find the appropriate locations for an insertion or deletion and then the thread attempts to atomically modify the list, using Compare And Swap operations
 
-The result is a lock free hash table that allows high concurrency, fast operations on the list and most importantly , does not require resizing and rehashing the entire hash table.
+The result, shown in figure \ref{hashes_split_ordered_perf} is a lock free hash table that allows high concurrency, fast operations on the list and most importantly , does not require resizing and rehashing the entire hash table.
+
+\begin{figure}
+ \centering
+  \includegraphics[scale=0.7]{hashes_split_ordered_perf.png}
+\caption{Performance of the split ordered algorithm}
+\label{hashes_split_ordered_perf}
+\end{figure}
 
 \section{Cuckoo Hashing}
 \subsection{Sequential version}
@@ -250,9 +284,16 @@ int insert(HashSet * table, int x){
 
 \end{lstlisting}
 
-The result is a concurrent open-addressing algorithm that perform extremely well when the load factor is small enough, especially on workloads that consist mainly of lookups.
+%The result is a concurrent open-addressing algorithm that perform extremely well when the load factor is small enough, especially on workloads that consist mainly of lookups.
 
-%results grafikes?
+In the cuckoo algorithm, search is faster because only two buckets with limited number of items must be checked. However, cuckoo hashing usually requires more than half of the table to be empty in order to perform properly. Moreover, some insertions may cause a realoction chain to loop, forcing the table to resize early, meaning that we cannot easily keep the table from expanding without altering the hash functions. As a result we have bigger tables that are resized more often and during resize, memory allocation is undertaken by a single thread while all the others wait doing nothing.
+
+\begin{figure}
+ \centering
+  \includegraphics[scale=0.5]{hashes_cuckoo_perf.png}
+\caption{Performance of the cuckoo hashing algorithm}
+\label{hashes_cuckoo_perf}
+\end{figure}
 
 \section{Non Blocking  open addressing}
 
@@ -352,4 +393,13 @@ The impact of the ABA problem is better understood from the following example of
   \includegraphics[scale=0.5]{non_blocking_3.png}
 \caption{The effect of the ABA problem on concurrent assisting of operations.}
 \label{non_blocking_3}
+\end{figure}
+
+This open addressing algorithm also requires bigger, partialy empty hash tables and resizing is again slow. However, if we know the aproximate size of the values inserted in advance, or if the workload consists mainly of lookups while instertions are rare, this implementation may perform better than the others,  mainly due to low it's small cache footprint that works very well with NUMA architectures. Figure \ref{hashes_non_blocking_perf} demonstrates that behaviour.
+
+\begin{figure}
+ \centering
+  \includegraphics[scale=0.5]{hashes_non_blocking_perf.png}
+\caption{Performance of the non blocking open addressing implementation}
+\label{hashes_non_blocking_perf}
 \end{figure}
