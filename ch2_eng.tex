@@ -37,7 +37,7 @@ In order to maintain the coherence of the data structure in a multi-threaded env
 Given the low level parallelization offered by the structure, the problem of high performance, essentially becomes the problem of finding a low cost synchronization scheme, as well as achieving better cache utilization.
 
 \subsection{Global Lock}
-In our first implementation we adopted a naive, coarse grained strategy. We introduce a global lock, which every thread is trying to set at the beginning of an enqueue or a dequeue. As expected,  performance shown in figure\ref{queue_global_lock_perf} is disappointing and the implementation does not scale. The reason is that, only one thread can execute an operation on the structure every given time, while all the other threads spin on the lock. The amount of work done in the critical section is so small that the overhead of synchronization over the lock becomes dominant instantly.
+In our first implementation we adopted a naive, coarse grained strategy. We introduce a global lock, which every thread is trying to set at the beginning of an enqueue or a dequeue. As expected,  performance shown in figure\ref{queue_global_lock_perf} is disappointing and the implementation does not scale. Since only one thread can execute an operation on the structure every given time, while all the other threads spin on the lock, we would expect performance to remain unchanged for any given number of threads. Instead, we can see an imediate and rapid decrease in throughput. %The amount of work done in the critical section is so small that the overhead of synchronization over the lock becomes dominant instantly.
 
 \begin{figure}
  \centering
@@ -47,9 +47,22 @@ In our first implementation we adopted a naive, coarse grained strategy. We intr
 \end{figure}
 
 
-Another reason for this poor performance is that the naive global lock implementation cause heavy cache coherence protocol traffic and bus congestion. Even after we implemented and used a TTAS( Test and Test And Set) lock that reduces traffic due to the cache coherence protocol, delays were still high. The main reason is that constantly reading the lock to check it's state produces heavy traffic. Also, since the lock is changing owners frequently, pointers on the list will ping pong back and forth across different caches, causing a lot of cache misses. 
+The reason for this poor performance is that the naive global lock implementation cause heavy cache coherence protocol traffic and bus congestion. Even after we implemented and used a TTAS( Test and Test And Set) lock that reduces traffic due to the cache coherence protocol, delays were still high. The main reason is that constantly reading the lock to check it's state produces heavy traffic. Also, since the lock is changing owners frequently, pointers on the list will ping pong back and forth across different caches, causing a lot of cache misses. 
 
-A solution to that problem is the introduction of backoff: when a thread finds a lock taken, it wont try to check its state again for a while, but will instead wait on loop for a few iterations. This way, the shared memory location is not polled so often,benefiting the general throughput as shown in figures \ref{queue_global_backoff_1.png} and \ref{queue_global_backoff_2.png}.
+\begin{figure}
+ \centering
+  \includegraphics[scale=0.5]{sandman_ping_pong_1.png}
+%\caption{Cache coherence traffic on the simple lock queue}
+\label{sandman_ping_pong_1}
+\end{figure}
+\begin{figure}
+ \centering
+  \includegraphics[scale=0.5]{sandman_ping_pong_2.png}
+\caption{Cache coherence traffic on the simple lock queue}
+\label{sandman_ping_pong_2}
+\end{figure}
+
+A solution to that problem is the introduction of backoff: when a thread finds a lock taken, it wont try to check its state again for a while, but will instead wait on loop for a few iterations. This way, the shared memory location is not polled so often,benefiting the general throughput as shown in figures \ref{queue_global_backoff_1} and \ref{queue_global_backoff_2}.
 
 
 \begin{figure}
@@ -95,11 +108,11 @@ On the other hand, we need only one C-A-S on the value of Head to perform a dequ
 \subsection{Challenges}
 At any given time during the execution of a thread, the values of Head and Tail can change unexpectedly, causing the atomic operations to fail and the execution to start over from the top: read the new value of Head/Tail and try to change it atomically. Moreover, in order for an enqueue to finish, both two required C-A-Ss need to succeed. This in turn makes it possible for the new node to be added to the list, without updating the value of Tail accordingly, i.e. Tail doesn't point to the last node. For  this reason, during enqueue or dequeue, it is necessary to check for this inconsistency and correct it.
 
-One of the problems that occurs during the implementation of this algorithm in particular and of algorithms that use C-A-S in general, is the so called ABA problem. In summary, the problem is described by the following scenario: A process observes that a memory location is in a state A and then is halted for a while. In the meantime, another process alters the state of the memory location to B, then back to A again. The initial process will find that the state of the memory location is A and a CAS will succeed, without knowing that the state has changed in the meantime. This problem is related to the lack of a garbage collector that would ensure that we could not release a memory segment that is still being referenced by a thread.
+%One of the problems that occurs during the implementation of this algorithm in particular and of algorithms that use C-A-S in general, is the so called ABA problem. In summary, the problem is described by the following scenario: A process observes that a memory location is in a state A and then is halted for a while. In the meantime, another process alters the state of the memory location to B, then back to A again. The initial process will find that the state of the memory location is A and a CAS will succeed, without knowing that the state has changed in the meantime. This problem is related to the lack of a garbage collector that would ensure that we could not release a memory segment that is still being referenced by a thread.
 
-In order to solve the problem, we chose to use modification counters, which we increase on every successful C-A-S and we incorporate them along with every pointer on the data structure. Atomic operations are now performed, not on the pointer but on the pair \textless pointer, modification counter\textgreater which is now treated as a single variable. Thus, we now have to treat pointers in a non traditional way, extracting them from the variable using bit shifting which causes overheads and make programming more difficult and error prone. 
+In order to solve the ABA problem, we chose to use modification counters, which we increase on every successful C-A-S and we incorporate them along with every pointer on the data structure. Atomic operations are now performed, not on the pointer but on the pair \textless pointer, modification counter\textgreater which is now treated as a single variable. Thus, we now have to treat pointers in a non traditional way, extracting them from the variable using bit shifting which causes overheads and make programming more difficult and error prone. 
 
-Alternatively,  there have been put forward many ways to solve the ABA problem, for example with the use of reference counters, that doesn't require merging counters and pointers.
+%Alternatively,  there have been put forward many ways to solve the ABA problem, for example with the use of reference counters, that doesn't require merging counters and pointers.
 
 The basic outline of the algorithm is shown bellow:
 
@@ -248,6 +261,16 @@ The next diagram compares the number of C-A-S operations( both successful and fa
  \centering
   \includegraphics[scale=0.5]{failed_cas.png}
 \caption{Total successful and failed C-A-Ss for the two lock-free implementations}
+\end{figure}
+
+We can see in figure \ref{queues_oversubscription} that during over-subscription, the global lock's performance suffers whereas lock-free approaches do not seem to be affected, since they are more robust against preemptions.
+
+
+\begin{figure}
+ \centering
+  \includegraphics[scale=0.5]{queues_oversubscription.png}
+\caption{The effects of over-subscription on locking and lock free algorithms}
+\label{queues_oversubscription}
 \end{figure}
 
 All in all, the optimistic optimization seems to contribute a slight amount of speedup, compared to the Michael Scott queue, as shown in figure \ref{queue_optimistic_perf}. The overall performance of the concurrent queue has significantly increased since the naive global lock algorithm, but many problems still remain. The very small critical section makes synchronization a high fraction of the total cost. Adding backoff was a step forward but it would potentially introduce heavy overheads for some threads.

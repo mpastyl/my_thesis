@@ -21,10 +21,11 @@ Closed addressing hash tables allow more than one values to be stored on the sam
 
 Open addressing hash tables allow no more than a single value per bucket. When a collision is detected, the buckets are traversed in order to find an empty bucket to store the new value, even though it’s hash value does not correspond to that bucket. The sequence according to which the buckets are traversed is typically:
 
-1) Linear probing, where an empty bucket is searched within a given number of steps from the mapping bucket
-2) Quadratic probing, where the buckets is searched at increasingly bigger intervals, according to successive values of a quadratic polynomial. 
-3) Double hashing, where interval is the outcome of a new hash function.
-
+\begin{enumerate}
+	\item Linear probing, where an empty bucket is searched within a given number of steps from the mapping bucket
+	\item Quadratic probing, where the buckets is searched at increasingly bigger intervals, according to successive values of a quadratic polynomial. 
+	\item Double hashing, where interval is the outcome of a new hash function.
+\end{enumerate}
 % kapoia sxhmata edw
 
  Some other important techniques used in resolving conflicts in open addressing hash tables is cuckoo hashing and hopscotch. Cuckoo hashing, as explained later in detail, employs a second , or more hash functions. The value is first hashed using the first hash function  and if it corresponds to an non-empty bucket the second hash function is used. If both buckets are empty, then one of the two previously hashed values is evicted and then hashed again using the other hash function, possibly triggering a series of evictions until all values are hashed.
@@ -119,13 +120,20 @@ void acquire(HashTable_t T , int x){
 
 \end{lstlisting}
 
-The result is an increase in performance, because we exploit the finer grained syncronization. However, this imporovement comes with the cost of slower resizing. Increasing the number of locks means that we need more time to allocate the extra locks and more time to wait until all locks are free. The extra amount of time introduced is shown in figure \ref{hashes_refinable_resize}.
+The result is an increase in performance, because we exploit the finer grained syncronization. However, this imporovement comes with the cost of slower resizing. Increasing the number of locks means that we need more time to allocate the extra locks and more time to wait until all locks are free. The extra amount of time introduced is shown in figure \ref{hashes_refinable_resize}. In fact, figure \ref{hashes_refinable_stop_resizing} suggests that it would be better to stop resizing the locks array after a certain point.
  
 \begin{figure}
  \centering
   \includegraphics[scale=0.7]{hashes_refinable_resize.png}
 \caption{The amount of time needed for every resize}
 \label{hashes_refinable_resize}
+\end{figure}
+
+\begin{figure}
+ \centering
+  \includegraphics[scale=0.7]{hashes_refinable_stop_resizing.png}
+\caption{Setting a maximum granuality level affects performance }
+\label{hashes_refinable_stop_resizing}
 \end{figure}
 
 \section { Split Ordered List}
@@ -144,7 +152,7 @@ Split ordering is in fact the reverse bit representation of values, kept in asce
 \label{split_ordered_1}
 \end{figure}
 
-There are some extra things to note here that illustrate why this specific type of ordering is the ideal for our need. Imagine a thread trying to search for the value 6 in the hash table depicted in part a. The capacity ( the number of buckets is 2) so and values 6 hashes to bucket zero. The thread starts traversing the list and while being at node value 4, a delay occurs. During that delay, capacity is double and a new bucket (bucket 2) is inserted between values 4 and 6, splitting bucket zero in half. As seen above, 2 is prior to 6 according to split ordering, and that mean that traversal well go past 2 and keep looking until it successfully finds the value 6. This depicts a key idea of the algorithm: when the table's capacity is doubled from 2\textsuperscript{i} to 2\textsuperscript{i+1}, a buckets b is split in half and those elements with values k for witch k mod 2\textsuperscript{i+1} =b  remain in bucket b while the others migrate to bucket b + 2\textsuperscript{i}. The algorithm ensures that these two bucket are positioned one after an other, so that in order to split the bucket we don’t really have to move any node around, but instead we only need to let the new bucket start after the first group of items and before the second.
+There are some extra things to note here that illustrate why this specific type of ordering is the ideal for our need. Imagine a thread trying to search for the value 6 in the hash table depicted in part a. The capacity ( the number of buckets is 2) so values 6 hashes to bucket zero. The thread starts traversing the list and while being at node value 4, a delay occurs. During that delay, capacity is double and a new bucket (bucket 2) is inserted between values 4 and 6, splitting bucket zero in half. As seen above, 2 is prior to 6 according to split ordering, and that mean that traversal well go past 2 and keep looking until it successfully finds the value 6. This depicts a key idea of the algorithm: when the table's capacity is doubled from 2\textsuperscript{i} to 2\textsuperscript{i+1}, a buckets b is split in half and those elements with values k for witch k mod 2\textsuperscript{i+1} =b  remain in bucket b while the others migrate to bucket b + 2\textsuperscript{i}. The algorithm ensures that these two bucket are positioned one after an other, so that in order to split the bucket we don’t really have to move any node around, but instead we only need to let the new bucket start after the first group of items and before the second.
 
 To avoid the case where a node referenced by a bucket is deleted, we use sentinel nodes, inserted at the lists locations pointed to by every bucket. We use the Least Significant Bit of the reversed bit representation to differentiate between normal node and sentinel node and we don not de-allocate these sentinels node during deletion operation, in order to avoid corner cases.
 
