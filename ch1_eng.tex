@@ -152,7 +152,7 @@ Figure \ref{Amdahls_law} visualizes the effect's of Amdahl's law. What it really
 
 In parallel applications, threads will eventually need to communicate with each other or perform operations on a common data structure. In the shared memory model where every shared variable is easily accessible, it would be tempting to simply modify the shared memory as if threads were running in isolation, each with access to its own memory space. This would be entirely wrong since synchronizing concurrent accesses on shared memory locations is extremely important in parallel programming. The next figure shows a simple example of how the absence of synchronized access on a counter leads to inconsistencies. The counter is incremented once by every one of the two threads, but due to the patter of operations executed, it is eventually incremented only once.
 
-\begin{lstlisting}
+\begin{lstlisting}[caption={ Inconsistencies caused by the lack of syncronization}]
 	
 Thread1                          Thread2
 

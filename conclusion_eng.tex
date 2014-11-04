@@ -1,0 +1,19 @@
+\selectlanguage{english}
+
+\chapter{Conclusions}
+\section{Synopsis}
+
+In this thesis we studied concurrent data structures, in particular FIFO queues and hash tables, two data structures with many inherent difference that reside on opposide ends of the spectrum of concurrency level.
+
+FIFO queues proved to be inherently sequential data structures with little room for scalability. The simple locking aproach was inefficient, whereas lock - free approaches provided a more robust alternative. The study of flat combining suggested that the key to achieve performance is low synchronization overhead and high cache utilization.
+
+On the other hand, hash tables allowed more threads to operate concurrently and scaled better. Performance was greatly affected by each algorithm, collision resolution policy, resizing mechanism and syncronization scheme. Locking and non blocking approaches were examined, each with it's own strengths and weaknesses, while transcational memory provided a worth mentioned alternative.
+ 
+\section{Future Work}
+
+There are still many interesting implementations of concurrent queues and hash tables to be studied, each with its own set of characteristics and innovations. 
+
+Regarding hash tables, it would be interesting to pursue an adaptive, dynamic approach where, the type of hash table used is determined by the workload and may change dynamically. Frequent resizes would suggest that a split ordered list may be more fitting, so during a resize, after we have stopped every operation, we can rehash everything to a split ordered list and stop worrying about the cost of resizing. If the size stabilizes and the workload ends up consisting mainly of lookups, transferring the keys to an open addressing hash table would decrease lookup time.
+
+Other than the two data structures we studied, there is a vast number and diversity of structures. Search trees, for example, are one of the most studied and frequently used and parallelizing them introduces many, new challenges.
+

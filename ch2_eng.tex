@@ -79,8 +79,14 @@ A solution to that problem is the introduction of backoff: when a thread finds a
 \label{queue_global_backoff_2}
 \end{figure}
 
-We can easily see that in general, longer backoff generally increases overall throughput. The reason is more than the reduced traffic caused from polling on the lock. A high backoff means that threads that not manage to take the lock will become inactive for a while, but the thread that takes the lock will quickly complete the critical section (which is very small) and will probably return to attempt another operation very soon. At that time, the other threads will be inactive, spending time backing off, and that thread will probably take the lock again, hitting L1 cache for the memory location of the lock, the Head and the Tail. This certainly improves performance by reducing cache misses, but makes the lock quite unfair: a thread that finds a lock taken may have to wait a long time before setting it to perform a single operation, while a thread that takes the lock will probably retake it several times in a row.   
+We can easily see that in general, longer backoff generally increases overall throughput. The reason is more than the reduced traffic caused from polling on the lock. A high backoff means that threads that not manage to take the lock will become inactive for a while, but the thread that takes the lock will quickly complete the critical section (which is very small) and will probably return to attempt another operation very soon. At that time, the other threads will be inactive, spending time backing off, and that thread will probably take the lock again, hitting L1 cache for the memory location of the lock, the Head and the Tail. This certainly improves performance by reducing cache misses, but makes the lock quite unfair: a thread that finds a lock taken may have to wait a long time before setting it to perform a single operation, while a thread that takes the lock will probably retake it several times in a row, as shown in figure \ref{queue_conseq_acq}.   
 
+\begin{figure}
+ \centering
+  \includegraphics[scale=0.7]{queue_conseq_acq.png}
+\caption{As the amount of backoff increases, the same thread will most likely take the lock more times in a row}
+\label{queue_conseq_acq}
+\end{figure}
 Another characteristic behavior is that throughput declines dramatically when the number of parallel threads exceeds the number of available cores. In this case, more than one threads share the same core and if a thread holding the lock is scheduled out, no other thread is advancing until that threads regains the CPU and unsets the lock. This is a general problem with locking implementations: If a thread inside the critical section is delayed, the progress of all other threads is halted and performance suffers significantly, making blocking algorithms not suitable for real-time applications.
 
 
@@ -116,7 +122,7 @@ In order to solve the ABA problem, we chose to use modification counters, which 
 
 The basic outline of the algorithm is shown bellow:
 
-\begin{lstlisting}
+\begin{lstlisting}[caption={Michael Scott queue pseudocode}]
 
 void enqueue (Queue_t * Q , int value){
 	
@@ -211,7 +217,7 @@ Inserting a new node in the list includes 3 steps:
 2) Compare And Swap on Tail, to make it point to the new node
 3) Change the prev pointer of the next node.
 
-\begin{lstlisting}
+\begin{lstlisting}[caption={Enqueue operation of the optimistic queue}]
 void enqueue ( Queue_t * Q, int value){
 	
 	node = allocate new node
@@ -233,7 +239,7 @@ In order to avoid the ABA problem and spot inconsistencies, this implementation 
 
 Any thread might take arbitrary time  between steps 2 and 3 and during this time more nodes might be inserted in the queue. Note however that, every time a node is successfully inserted in the queue(after successful C-A-S), the modification counter to be inserted next is incremented by one. Thus, pointers of consecutive nodes in the queue, will have consecutive modification counters. In this way, during a dequeue, if a prev pointer does not have the expected modification counter, FixList is called and the pointers are repaired.
 
-\begin{lstlisting}
+\begin{lstlisting}[caption={The function used to fix pointers along the prev direction}]
 void fixList(Queue_t Q, tail, head){
 	curNode = tail
 	while((head == Q->Head) && (curNode != head){
@@ -307,7 +313,7 @@ Flat combining is a layer of abstraction that can be used over a sequential stru
 
 The definition of the public record structure, as well as the main steps take by every thread are shown bellow:
 
-\begin{lstlisting}
+\begin{lstlisting}[caption={Basic layout of flat combining}]
 
 struct pub_record{
 	int pending
