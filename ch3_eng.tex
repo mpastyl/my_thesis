@@ -247,14 +247,11 @@ The main principle of the algorithm remains the same. During insertion, the valu
 In order to ensure synchronization, we choose to associate every set with its own lock. During any operation (insert, lookup or delete) on a value x, we lock the sets with index h1(x) on table 1 and h2(x) on table 2 accordingly, always in this order, to avoid deadlocks. During resizing, a thread take all the locks on table 1 in ascending order, allocates two new tables, rehashes everything from the old tables to the new ones and releases the locks in the same order. Note that it is possible to implement a striped approach, as discussed in previous implementations, whereas there is a lock-free implementation of cuckoo hashing in the literature \cite{lock_free_cuckoo}.
 
 The basic outline of the insert function is shown bellow.
-
-\begin{lstlisting}[caption={Insert methos of the cuckoo algorithm}]
-
-int insert(HashSet * table, int x){
+\begin{lstlisting}[caption={Insert methods of the cuckoo algorithm}]
+int insert(HashSet * table, int x)
 	acquire the locks on both buckets that x maps to
 	h0 = hash0(x)
 	h1 = hash1(x)
-	i=h=-1
 	mustResize = false
 	search(x) if found return false
 	set0 = table[0][h0]
@@ -287,9 +284,6 @@ int insert(HashSet * table, int x){
 		resize()
 	}
 	return true
-}
-		
-
 \end{lstlisting}
 
 %The result is a concurrent open-addressing algorithm that perform extremely well when the load factor is small enough, especially on workloads that consist mainly of lookups.
@@ -307,7 +301,7 @@ In the cuckoo algorithm, search is faster because only two buckets with limited 
 
 Last of all, we implemented another open addressing algorithm , introduced by Purchell and Haris \cite{non_blocking_open_addressing} that, unlike cuckoo hashing,  achieves non blocking access by using simple atomic operations.
 
-This algorithm resolves conflicts by using quadratic probing, along the subsequent values of <to polyonymo >.In this implementation, every bucket is accompanied by a probe bound, a value depicting the number of collision on the probe sequence. For example, when searching for a value on a bucket with a probe bound of 4 , we need to take up to 4 steps in the quadratic sequence to search for that value. Keeping a consistent view state of the probe bound can be challenging when multiple threads are inserting or deleting on the chain of collisions, as seen in figure \ref{non_blocking_1}.
+This algorithm resolves conflicts by using quadratic probing, along the subsequent values of $\left[ \frac{1}{2}\left(i^2 + i\right)\right]$ . In this implementation, every bucket is accompanied by a probe bound, a value depicting the number of collision on the probe sequence. For example, when searching for a value on a bucket with a probe bound of 4 , we need to take up to 4 steps in the quadratic sequence to search for that value. Keeping a consistent view state of the probe bound can be challenging when multiple threads are inserting or deleting on the chain of collisions, as seen in figure \ref{non_blocking_1}.
 
 % figure2 apo paper
 \begin{figure}
@@ -397,6 +391,7 @@ The impact of the ABA problem is better understood from the following example of
 
 %figure 7 apo paper
 \begin{figure}
+\vspace{-6ex}
  \centering
   \includegraphics[scale=0.5]{non_blocking_3.png}
 \caption{The effect of the ABA problem on concurrent assisting of operations.}
@@ -410,6 +405,9 @@ This open addressing algorithm also requires bigger, partialy empty hash tables 
   \includegraphics[scale=0.5]{hashes_non_blocking_perf.png}
 \caption{Performance of the non blocking open addressing implementation}
 \label{hashes_non_blocking_perf}
+  \includegraphics[scale=0.5]{hashes_tsx_perf.png}
+\caption{Performance of various implementations as the workload changes}
+\label{hashes_tsx_perf}
 \end{figure}
 
 \section{Transactional memory}
@@ -418,9 +416,6 @@ For completeness, we also present a simple implementation using hardware transac
 
 Figure \ref{hashes_tsx_perf} suggests that the transactional memory implementation perform very well, only when the workload consists only by lookups.In that case threads, dont modify memory locations and the absence of locking overhead leads to good performance. However, even a small percentage of insertions cause a significant amount of aborts and the advantage of transactional memory is quickly lost. In fact, as insertions become a bigger porportion of the workload, more and more transcation use the fallback mechanism and the algorithm gradually degrades down to the naive global lock aproach.
 
-\begin{figure}
- \centering
-  \includegraphics[scale=0.5]{hashes_tsx_perf.png}
-\caption{Performance of various implementations as the workload changes}
-\label{hashes_tsx_perf}
-\end{figure}
+%\begin{figure}
+% \centering
+%\end{figure}

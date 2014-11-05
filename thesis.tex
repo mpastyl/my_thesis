@@ -58,13 +58,13 @@ escapeinside={\%*}{*)}          % if you want to add a comment within your code
 \large \textbf{\textlatin{Performance and Scalability Analysis of Concurrent Data Structures}} \\
 \vspace{10ex}
 \large
-ΔΙΠΛΩΜΑΤΙΚΗ ΕΡΓΑΣΙΑ \\
+\centering{ΔΙΠΛΩΜΑΤΙΚΗ ΕΡΓΑΣΙΑ} \\
 \vspace{2ex}
 \normalsize
 του \\
 \vspace{2ex}
 \parbox[c]{0.4\textwidth} { \center\textbf{
-Χαράλαμπου Ε. Στυλιανόπουλου }}
+\mbox{\centering{Χαράλαμπου Ε. Στυλιανόπουλου}} }}
 \selectlanguage{english}  % mine -- to make sense
 %\parbox[c]{0.4\textwidth} { \center\textbf{
 %	-another author, whose name is here- }}
@@ -72,17 +72,16 @@ escapeinside={\%*}{*)}          % if you want to add a comment within your code
 \vspace{10ex}
 \flushleft
 \begin{tabbing}
-	\textbf{Επιβλέπων}: \= -Εισάγετε το όνομα, αρχικό πατρωνύμου
-				και επίθετο- \\
-			    \> -Εισάγετε τον τίτλο του επιβλέποντα-
+	\textbf{Επιβλέπων}: \= Νεκτάριος Κοζύρης \\
+			    \> Καθηγητής Ε.Μ.Π.\\
 \end{tabbing}
 }
 \date{
 \normalsize
-Αθήνα, -Εισάγετε το μήνα και το έτος κατάθεσης της εργασίας-}
+Αθήνα, Νοέμβριος 2014}
 
 \maketitle
-\newpage
+\clearpage\null\newpage
 \hspace{10pt}
 %\tiny
 %(this page is left intentionally blanc)
@@ -110,7 +109,7 @@ escapeinside={\%*}{*)}          % if you want to add a comment within your code
 του \\
 \vspace{2ex}
 \parbox[c]{0.4\textwidth} { \center\textbf{
-Χαράλαμπου Ε. Στυλιανόπουλου }}
+\mbox{Χαράλαμπου Ε. Στυλιανόπουλου} }}
 \selectlanguage{english}  % mine -- to make sense
 %\parbox[c]{0.4\textwidth} { \center\textbf{
 %	-another author, whose name is here- }}
@@ -118,37 +117,36 @@ escapeinside={\%*}{*)}          % if you want to add a comment within your code
 \vspace{10ex}
 \flushleft
 \begin{tabbing}
-\textbf{Επιβλέπων}: \= -Εισάγετε το όνομα, αρχικό πατρωνύμου
-			και επίθετο- \\
-		    \> -Εισάγετε τον τίτλο του επιβλέποντα-
+\textbf{Επιβλέπων}: \= Νεκτάριος Κοζύρης \\
+		    \> Καθηγητής Ε.Μ.Π. \\
 \end{tabbing}
 \end{center}
 
 \noindent
-Εγκρίθηκε από την τριμελή εξεταστική επιτροπή την -εισάγετε ημερομηνία-.
+Εγκρίθηκε από την τριμελή εξεταστική επιτροπή την 7\textsuperscript{η} Νοεμβρίου 2014.
 
 \begin{center}
 \scriptsize
 \parbox[b]{0.3\textwidth} {\center
 	........................................
-	-Εισάγετε ονοματεπώνυμο-
-	-Εισάγετε τίτλο-
+	Νεκτάριος Κοζύρης
+	Καθηγητής Ε.Μ.Π.
 }
 \parbox[b]{0.3\textwidth} {\center
 	........................................
-	-Εισάγετε ονοματεπώνυμο-
-	-Εισάγετε τίτλο-
+	Γεώργιος Γκούμας
+	Λέκτορας Ε.Μ.Π.
 }
 \parbox[b]{0.3\textwidth} {\center
 	........................................
-	-Εισάγετε ονοματεπώνυμο-
-	-Εισάγετε τίτλο-
+	Νικόλαος Παπασπύρου
+	Αν. Καθηγητής Ε.Μ.Π.
 }
 \end{center}
 \vspace{10ex}
 \normalsize
 \noindent
-Αθήνα, (εισάγετε το μήνα και το έτος κατάθεσης της εργασίας).
+Αθήνα, Νοέμβριος 2014.
 \newpage
 \hspace{10pt}
 
@@ -188,7 +186,12 @@ escapeinside={\%*}{*)}          % if you want to add a comment within your code
 %% mine
 \newpage
 \include{abstract_greek}
+\clearpage\null\newpage
 \include{abstract_eng}
+\clearpage\null\newpage
+\include{acknowledgements}
+\clearpage\null\newpage
+\selectlanguage{english} % mine
 \tableofcontents
 \listoffigures
 %\listoftables
@@ -208,7 +211,7 @@ escapeinside={\%*}{*)}          % if you want to add a comment within your code
 \noindent
 \selectlanguage{greek}  % mine
 % mine -- maybe more text about copyrights, etc here.
-\copyright \hspace{1em}(Εισάγετε έτος έκδοσης) Εθνικό Μετσόβιο Πολυτεχνείο.
+\copyright \hspace{1em}2014 Εθνικό Μετσόβιο Πολυτεχνείο.
 \selectlanguage{english}  % mine
 \textlatin{All rights reserved.}
 
@@ -216,6 +219,7 @@ escapeinside={\%*}{*)}          % if you want to add a comment within your code
 \selectlanguage{greek}  % mine
 \printindex  % mine -- do you use one?
 \nocite{*}
+\selectlanguage{english} % mine
 \bibliographystyle{babplain-fl}  %mine -- for name-surname order
 \bibliography{references}  % mine -- the references.bib file
 \end{document}

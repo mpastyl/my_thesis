@@ -67,14 +67,14 @@ A solution to that problem is the introduction of backoff: when a thread finds a
 
 \begin{figure}
  \centering
-  \includegraphics[scale=0.7]{queue_global_backoff_1.png}
+  \includegraphics[scale=0.5]{queue_global_backoff_1.png}
 \caption[The effects of backoff in performance ]{The amount of backoff affects throughput. Points on the horizontal axis are the number of iterations spend waiting on a loop. Red and green lines represent of threads inside the same node, while in blue and yellow lines, threads are placed across multiple nodes}
 \label{queue_global_backoff_1}
 \end{figure}
 
 \begin{figure}
  \centering
-  \includegraphics[scale=0.7]{queue_global_backoff_2.png}
+  \includegraphics[scale=0.5]{queue_global_backoff_2.png}
 \caption{The overall scalling of global lock implementation for various amounts of backoff}
 \label{queue_global_backoff_2}
 \end{figure}
@@ -83,7 +83,7 @@ We can easily see that in general, longer backoff generally increases overall th
 
 \begin{figure}
  \centering
-  \includegraphics[scale=0.7]{queue_conseq_acq.png}
+  \includegraphics[scale=0.5]{queue_conseq_acq.png}
 \caption{As the amount of backoff increases, the same thread will most likely take the lock more times in a row}
 \label{queue_conseq_acq}
 \end{figure}
@@ -121,7 +121,7 @@ In order to solve the ABA problem, we chose to use modification counters, which 
 %Alternatively,  there have been put forward many ways to solve the ABA problem, for example with the use of reference counters, that doesn't require merging counters and pointers.
 
 The basic outline of the algorithm is shown bellow:
-
+\pagebreak
 \begin{lstlisting}[caption={Michael Scott queue pseudocode}]
 
 void enqueue (Queue_t * Q , int value){
@@ -166,7 +166,7 @@ boolean dequeue (Queue_t *Q, int * pvalue){
 
 \begin{figure}
  \centering
-  \includegraphics[scale=0.7]{queue_msqueue_perf.png}
+  \includegraphics[scale=0.5]{queue_msqueue_perf.png}
  \caption{ Performance of the Michael Scott queue compared to the global lock queue}
 \label{queue_msqueue_perf}
 \end{figure}
@@ -312,7 +312,7 @@ Flat combining is a layer of abstraction that can be used over a sequential stru
 \end{figure}
 
 The definition of the public record structure, as well as the main steps take by every thread are shown bellow:
-
+\pagebreak
 \begin{lstlisting}[caption={Basic layout of flat combining}]
 
 struct pub_record{
@@ -362,10 +362,12 @@ int try_access(Queue_t Q, struct pub_record * pub, int operation, int value){
 
 \subsection{Implementation characteristics and Benefits}
 From the way flat combining works, certain advantages can be concluded:
-1)Since only the combiner has access to the structure, operations can be optimized with the best sequential algorithm, without minding synchronization and concurrency. This even allows us to implement concurrent structures, such as pairing heaps, that are otherwise difficult to implement using fine grain synchronization, by applying flat combining over already existent sequential data structures.
-2) in some cases, the combiner can use some smart way to group the request and make the access to the structure faster and more efficient. For example, in concurrent stacks, a combiner can perform elimination between a concurrent enqueue and a concurrent dequeue. In our queue implementation, we used fat nodes to group data, as we explain later on.
-3) The combined way of accessing the structure by a single thread can lead to better cache utilization.
-4) Using a global lock to isolate the structure makes programming, as well as debugging, much easier.
+\begin{enumerate}
+\item Since only the combiner has access to the structure, operations can be optimized with the best sequential algorithm, without minding synchronization and concurrency. This even allows us to implement concurrent structures, such as pairing heaps, that are otherwise difficult to implement using fine grain synchronization, by applying flat combining over already existent sequential data structures.
+\item In some cases, the combiner can use some smart way to group the request and make the access to the structure faster and more efficient. For example, in concurrent stacks, a combiner can perform elimination between a concurrent enqueue and a concurrent dequeue. In our queue implementation, we used fat nodes to group data, as we explain later on.
+\item The combined way of accessing the structure by a single thread can lead to better cache utilization.
+\item Using a global lock to isolate the structure makes programming, as well as debugging, much easier.
+\end{enumerate}
 
 It is also important to note that flat combining, as a layer of abstraction that ensures synchronization, can bee used as it is over different data structured. Of course, not all data structures are benefited by flat combining. For example, if the cost of a single operation in a search tree is \textgreek{Θ} (logn), using flat combining, the cost of k operations is in general \textgreek{Θ} (klogn), while we could  use parallel threads that execute operations independently on different parts of the tree in \textgreek{Θ} (longn) total time.
 
@@ -385,7 +387,7 @@ Figure \ref{queue_fc_queue_perf} shows the overall performance of flat combining
 
 \begin{figure}
  \centering
-  \includegraphics[scale=0.7]{queue_fc_queue_loops.png}
+  \includegraphics[scale=0.5]{queue_fc_queue_loops.png}
 \caption{The effects of keeping the combiner iterating more than once over the public records}
 \label{queue_fc_queue_loops}
 \end{figure}
@@ -416,19 +418,21 @@ The previously implemented flat combining algorithm is not NUMA-aware and cannot
 The implementation that was eventually chosen  consists of two stages. In the first stage, we use flat combining in every NUMA node. Threads of the same node are synchronized to come up with a combiner. In the second stage, combiners from each node are further synchronized to access the queue. In the second stage we tried several synchronization schemes ( Michael-Scott queue, a second level of flat combining). Eventually, the best performance for the given architecture was achieved by a simple TTAS global lock.
 
 \begin{figure}
+\vspace{-6ex}
  \centering
-  \includegraphics[scale=0.5]{queue_fc_hybrid_basic.png}
+  \includegraphics[scale=0.4]{queue_fc_hybrid_basic.png}
 \caption{The use basic layout of the hybrid aproach}
 \label{queue_fc_hybrid_basic}
+\end{figure}
+
+\begin{figure}
+ \centering
+  \includegraphics[scale=0.5]{queue_fc_hybrid_perf.png}
+\caption{The use performance of the hybrid aproach compared to other flat combining schemes}
+\label{queue_fc_hybrid_perf}
 \end{figure}
 
 The result was a limited improvement of the performance when threads reside across several nodes, shown in figure \ref{queue_fc_hybrid_perf}.
 
  
-\begin{figure}
- \centering
-  \includegraphics[scale=0.7]{queue_fc_hybrid_perf.png}
-\caption{The use performance of the hybrid aproach compared to other flat combining schemes}
-\label{queue_fc_hybrid_perf}
-\end{figure}
 
