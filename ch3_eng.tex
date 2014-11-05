@@ -79,7 +79,7 @@ We then try to permit more concurrency by used a fixed number of locks, instead 
 \end{figure}
 
 
-Having more than one locks means more than one threads can proceed  successfully and this results to less contention, more concurrency and improved performance. Increasing the number of locks , closer and closer to the number of buckets, seems to improve throughput and refuce latency , as depicted in figures \ref{hashes_striped_through} and \ref{hashes_striped_latency}. However, if we want to keep the number of locks equal to the number of buckets, as the table increases in size, we need to be able to resize the lock array as well, which is not straightforward.
+Having more than one locks means more than one threads can proceed  successfully and this results to less contention, more concurrency and improved performance. Increasing the number of locks , closer and closer to the number of buckets, seems to improve throughput and reduce latency , as depicted in figures \ref{hashes_striped_through} and \ref{hashes_striped_latency}. However, if we want to keep the number of locks equal to the number of buckets, as the table increases in size, we need to be able to resize the lock array as well, which is not straightforward.
 
 \begin{figure}
  \centering
@@ -109,7 +109,7 @@ void acquire(HashTable_t T , int x){
 		}while (mark && who != me)
 		
 		Locks[] oldLocks = locks
-		lock the apropriate lock on oldLocks array
+		lock the appropriate lock on oldLocks array
 		<who, mark> = owner
 		if ((!mark || (who == me)) && locks = oldLocks)
 			return
@@ -120,7 +120,7 @@ void acquire(HashTable_t T , int x){
 
 \end{lstlisting}
 
-The result is an increase in performance, because we exploit the finer grained syncronization. However, this imporovement comes with the cost of slower resizing. Increasing the number of locks means that we need more time to allocate the extra locks and more time to wait until all locks are free. The extra amount of time introduced is shown in figure \ref{hashes_refinable_resize}. In fact, figure \ref{hashes_refinable_stop_resizing} suggests that it would be better to stop resizing the locks array after a certain point.
+The result is an increase in performance, because we exploit the finer grained synchronization. However, this improvement comes with the cost of slower resizing. Increasing the number of locks means that we need more time to allocate the extra locks and more time to wait until all locks are free. The extra amount of time introduced is shown in figure \ref{hashes_refinable_resize}. In fact, figure \ref{hashes_refinable_stop_resizing} suggests that it would be better to stop resizing the locks array after a certain point.
  
 \begin{figure}
  \centering
@@ -148,7 +148,7 @@ Split ordering is in fact the reverse bit representation of values, kept in asce
 \begin{figure}
  \centering
   \includegraphics[scale=0.5]{split_ordered_1.png}
-\caption[Resizing in split ordered hash table ]{This figure explains how split ordeding manages to effectively split a bucket in half.In part a , the list consists of two buckets. Above each node is it's split-ordered key, which is the reversed bit representation of each value. Square nodes are sentinel nodes, depicting the start of each bucket. When the table capacity grows from 2 to 4 in  part b, two new buckets are inserted, spliting the older one in half}
+\caption[Resizing in split ordered hash table ]{This figure explains how split ordering manages to effectively split a bucket in half. In part a , the list consists of two buckets. Above each node is it's split-ordered key, which is the reversed bit representation of each value. Square nodes are sentinel nodes, depicting the start of each bucket. When the table capacity grows from 2 to 4 in  part b, two new buckets are inserted, splitting the older one in half}
 \label{split_ordered_1}
 \end{figure}
 
@@ -156,7 +156,7 @@ There are some extra things to note here that illustrate why this specific type 
 
 To avoid the case where a node referenced by a bucket is deleted, we use sentinel nodes, inserted at the lists locations pointed to by every bucket. We use the Least Significant Bit of the reversed bit representation to differentiate between normal node and sentinel node and we do not de-allocate these sentinels node during deletion operation, in order to avoid corner cases.
 
-In order to keep track of the load factor, we update a shared variable on every insert/delete operation that depicts the number of values currently stored in the table. If the ratio of inserted values to number of bucket exceeds a certain limit, we double the capacity, thus introducing new available buckets. Note that, in order to avoid complexity, we allocate a large array of buckets in advance. By introducing an extra level of indirection, namely an array of array of buckets, we could be able to adaptably increase the maximum number of available buckets if needed.
+In order to keep track of the load factor, we update a shared variable on every insert/delete operation that depicts the number of values currently stored in the table. If the ratio of inserted values to number of bucket exceeds a certain limit, we double the capacity, thus introducing new available buckets. Note that, in order to avoid complexity, we allocate a large array of buckets in advance. By introducing an extra level of indirection, namely an array of array of buckets, we could be able to adaptively increase the maximum number of available buckets if needed.
 
 Figure \ref{split_ordered_2} is an example of how adding a new value in the hash table increases capacity and introduces new buckets.
 
@@ -178,7 +178,7 @@ Note that unused buckets are uninitialized. The sentinel nodes for each bucket a
 \label{split_ordered_3}
 \end{figure}
 
-The insert operations looks very simple, simply initializing the bucket if needed and then inserting the split-ordered key in the list starting from the node referenced by the apropriate bucket. Finaly, we check if the capacity needs to be doubled. The same outline is followed by the lookup operation.
+The insert operations looks very simple, simply initializing the bucket if needed and then inserting the split-ordered key in the list starting from the node referenced by the appropriate bucket. Finally, we check if the capacity needs to be doubled. The same outline is followed by the lookup operation.
 
 \begin{lstlisting}[caption={Insert and Loopkup operations of the split ordered algorithm}]
 
@@ -288,7 +288,7 @@ int insert(HashSet * table, int x)
 
 %The result is a concurrent open-addressing algorithm that perform extremely well when the load factor is small enough, especially on workloads that consist mainly of lookups.
 
-In the cuckoo algorithm, search is faster because only two buckets with limited number of items must be checked. However, cuckoo hashing usually requires more than half of the table to be empty in order to perform properly. Moreover, some insertions may cause a realoction chain to loop, forcing the table to resize early, meaning that we cannot easily keep the table from expanding without altering the hash functions. As a result we have bigger tables that are resized more often and during resize, memory allocation is undertaken by a single thread while all the others wait doing nothing.
+In the cuckoo algorithm, search is faster because only two buckets with limited number of items must be checked. However, cuckoo hashing usually requires more than half of the table to be empty in order to perform properly. Moreover, some insertions may cause a realocation chain to loop, forcing the table to resize early, meaning that we cannot easily keep the table from expanding without altering the hash functions. As a result we have bigger tables that are resized more often and during resize, memory allocation is undertaken by a single thread while all the others wait doing nothing.
 
 \begin{figure}
  \centering
@@ -398,7 +398,7 @@ The impact of the ABA problem is better understood from the following example of
 \label{non_blocking_3}
 \end{figure}
 
-This open addressing algorithm also requires bigger, partialy empty hash tables and resizing is again slow. However, if we know the aproximate size of the values inserted in advance, or if the workload consists mainly of lookups while instertions are rare, this implementation may perform better than the others,  mainly due to low it's small cache footprint that works very well with NUMA architectures. Figure \ref{hashes_non_blocking_perf} demonstrates that behaviour.
+This open addressing algorithm also requires bigger, partially empty hash tables and resizing is again slow. However, if we know the approximate size of the values inserted in advance, or if the workload consists mainly of lookups while insertions are rare, this implementation may perform better than the others,  mainly due to low it's small cache footprint that works very well with NUMA architectures. Figure \ref{hashes_non_blocking_perf} demonstrates that behavior.
 
 \begin{figure}
  \centering
@@ -412,9 +412,9 @@ This open addressing algorithm also requires bigger, partialy empty hash tables 
 
 \section{Transactional memory}
 
-For completeness, we also present a simple implementation using hardware transactional memory on Intel's Hashwell multiprocessor. Operations on the table are executed inside a transcation. After a few consequtive aborts, a global lock is used as a fallback mechanism.
+For completeness, we also present a simple implementation using hardware transactional memory on Intel's Hashwell multiprocessor. Operations on the table are executed inside a transaction. After a few consecutive aborts, a global lock is used as a fallback mechanism.
 
-Figure \ref{hashes_tsx_perf} suggests that the transactional memory implementation perform very well, only when the workload consists only by lookups.In that case threads, dont modify memory locations and the absence of locking overhead leads to good performance. However, even a small percentage of insertions cause a significant amount of aborts and the advantage of transactional memory is quickly lost. In fact, as insertions become a bigger porportion of the workload, more and more transcation use the fallback mechanism and the algorithm gradually degrades down to the naive global lock aproach.
+Figure \ref{hashes_tsx_perf} suggests that the transactional memory implementation perform very well, only when the workload consists only by lookups.In that case threads, dont modify memory locations and the absence of locking overhead leads to good performance. However, even a small percentage of insertions cause a significant amount of aborts and the advantage of transactional memory is quickly lost. In fact, as insertions become a bigger proportion of the workload, more and more transaction use the fallback mechanism and the algorithm gradually degrades down to the naive global lock approach.
 
 %\begin{figure}
 % \centering

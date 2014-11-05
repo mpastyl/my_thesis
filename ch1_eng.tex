@@ -74,7 +74,7 @@ On the other hand, NUMA might perform badly when threads from different packages
 
 \subsection{Distributed memory}
 
-In distributed memory architectures, every processor has it's own cache and local memory, and it has access only to that memory hierarchy.  All processors are connected on an intercontection network(Ethernet, Mirinet), consist of complex switching topologies. Communication is done using messages from processor to processor and usually being served by memory controller with direct memory access(DMA). Accessing data stored on memory outside the processor, may require several messages to be past between nodes.
+In distributed memory architectures, every processor has it's own cache and local memory, and it has access only to that memory hierarchy.  All processors are connected on an interconection network(Ethernet, Mirinet), consist of complex switching topologies. Communication is done using messages from processor to processor and usually being served by memory controller with direct memory access(DMA). Accessing data stored on memory outside the processor, may require several messages to be past between nodes.
 
 %eikona gia distributed
 
@@ -124,11 +124,11 @@ According to the state diagram depicted in figure \ref{mesi_protocol}, the MESI 
 
 \subsection{Memory consistency}
 
-In  programm running on a multithreaded machine, the order between operations is not always guaranteed, and operations issued concurrently by many processors may actually take effect in an oder that cannot be determined in advance. In this way, no guaranteed ordering can be assumed when writing parallel programs. In an even more relaxed model, it is even possible for operations on the same core to be rearranged by the compiler or the processing unit, for various performance reasons. In that case, memory barriers can be used to make sure that operations all operations before the barrier have been completed.
+In a program running on a multithreaded machine, the order between operations is not always guaranteed, and operations issued concurrently by many processors may actually take effect in an oder that cannot be determined in advance. In this way, no guaranteed ordering can be assumed when writing parallel programs. In an even more relaxed model, it is even possible for operations on the same core to be rearranged by the compiler or the processing unit, for various performance reasons. In that case, memory barriers can be used to make sure that operations all operations before the barrier have been completed.
 
 \subsection{Amdahl's Law}
 
-In an effort to achieve better performance, parallel programming aims to exploit more cores to speed-up sequential problems. Amdhal's law is a famous theoritical fomula used to determine the maximum expected speedup achieved
+In an effort to achieve better performance, parallel programming aims to exploit more cores to speed-up sequential problems. Amdhal's law is a famous theoretical formula used to determine the maximum expected speedup achieved
 
 Consider speedup S as the ratio between the time it takes on processor to finish a job and the amount of time it takes for n processor to finish that job. Also consider f to be the fraction of the job  that cannot be parallelized and must be done sequential. Amdahl's law dictates that 
 
@@ -140,7 +140,7 @@ Consider speedup S as the ratio between the time it takes on processor to finish
 
 where n is the amount of available processors. The effects of that law can be understood through an example. If we manage to parallelize as much of 90\% of an application and have only 10\% executed sequential, using 10 processors to run that application will yield, according to Amdahl's law an speedup of 5.2, meaning only halve of our processing power is utilized. 
 
-Figure \ref{Amdahls_law} visualizes the effect's of Amdahl's law. What it really means is that the sequential part of the algorithm must be as little as possible, if we hope to achieve high speedup. In most of the cases, the sequential part of a multithreaded application is the communication between the threads and the input/output operations that are all served by a single memory channel with limited bandwidth. Parellelizing more and more of that sequential but is not always easy but it is , in many cases, the main focus of parallel programming and they key to improve performance. 
+Figure \ref{Amdahls_law} visualizes the effect's of Amdahl's law. What it really means is that the sequential part of the algorithm must be as little as possible, if we hope to achieve high speedup. In most of the cases, the sequential part of a multithreaded application is the communication between the threads and the input/output operations that are all served by a single memory channel with limited bandwidth. Parallelizing more and more of that sequential but is not always easy but it is , in many cases, the main focus of parallel programming and they key to improve performance. 
 \begin{figure} 
  \centering 
   \includegraphics[scale=0.5]{Amdahls_law.png} 
@@ -167,7 +167,7 @@ counter = var1
 
 \end{lstlisting}
 
-This problem cannot be solved without hardware support, specifically atomic primitives that will ensure that an operation will be executed without being interrupted by a concurrent thread.  With the use of Fetch -And-Inc, incrementing a shared variable can be implemented safely, at the extra cost of locking  the memory bus until the variable is read and incremented. Other useful atomic operations, provided in most systems, are Test And Set(TAS) and Compare And Swap(CAS). Test and Set will atomically set a variable to 1 and return its previous value. Compare Snd Swap will compare the value store at a memory location with a giver value and only if they are equall, CAS will update that location to a new given value and return true. If not the operation will fail.
+This problem cannot be solved without hardware support, specifically atomic primitives that will ensure that an operation will be executed without being interrupted by a concurrent thread.  With the use of Fetch -And-Inc, incrementing a shared variable can be implemented safely, at the extra cost of locking  the memory bus until the variable is read and incremented. Other useful atomic operations, provided in most systems, are Test And Set(TAS) and Compare And Swap(CAS). Test and Set will atomically set a variable to 1 and return its previous value. Compare And Swap will compare the value store at a memory location with a giver value and only if they are equal, CAS will update that location to a new given value and return true. If not the operation will fail.
 
 Synchronization schemes in a parallel program  can be classified in one of three categories : \textbf{blocking}, \textbf{lock-free} and \textbf{wait-free synchronization}.
 
@@ -200,7 +200,7 @@ Non blocking approaches, meaning either lock-free or wait-free approaches, gener
 %\end{figure}
 
 \subsection{Synchronization}
-In most concurrent programming models, syncronization is achieved by one of the following techniques:
+In most concurrent programming models, synchronization is achieved by one of the following techniques:
 
 \subsubsection{Mutual Exclusion}
 
@@ -212,7 +212,7 @@ Locks make synchronization easy, but sometimes we need more than one locks to al
 
 \subsubsection{Atomic Operations}
 
-Most of the times, non blocking approaches are implemented using the Compare And Swap atomic primitive. A thread will need to commit its change using a single CAS. If it is successful, the operation is complete. If not, this is a sign that another thread managed to complete an operation prior to that thread, so the currents thread's view of the shared memory is outdated and the operation needs to restart from the top. Alternatively, Link-Store Conditional (LL/SC) can be used. LL/SC will mark a memory location and update it only if no other concurrent updated have occured in the meantime.
+Most of the times, non blocking approaches are implemented using the Compare And Swap atomic primitive. A thread will need to commit its change using a single CAS. If it is successful, the operation is complete. If not, this is a sign that another thread managed to complete an operation prior to that thread, so the currents thread's view of the shared memory is outdated and the operation needs to restart from the top. Alternatively, Link-Store Conditional (LL/SC) can be used. LL/SC will mark a memory location and update it only if no other concurrent updated have occurred in the meantime.
 
 There are times when one CAS is not enough to successfully complete an operation, because several locations must be updated in atomic manner. In those cases, a typical approach to execute the operation  incrementally and have other threads help complete the work of others. In lock free approaches, it is possible that a thread will take an infinite amount of time to complete its operation because it endlessly helps complete the work of others, but the shared object is guaranteed to progress in general.
 
@@ -221,7 +221,7 @@ Correctness of non blocking approaches is  generally difficult to prove. Its bas
 
 One of the problems that occurs during the implementation of this algorithm in particular and of algorithms that use C-A-S in general, is the so called ABA problem. In summary, the problem is described by the following scenario: A process observes that a memory location is in a state A and then is halted for a while. In the meantime, another process alters the state of the memory location to B, then back to A again. The initial process will find that the state of the memory location is A and a CAS will succeed, without knowing that the state has changed in the meantime. This problem is related to the lack of a garbage collector that would ensure that we could not release a memory segment that is still being referenced by a thread.
 
-A standard way to solve the problem is to incorporate a counter allong with the memory location we are trying to update. CAS is now performed not on the memory location itself but on the pair \textless memory location, counter\textless and every succesfull CAS will increment the counter. Thus, a delayed CAS will find the memory location altered because of the different counter and it will fail. This does not solver the problem, because the counter may track only a finite amount of updates. Instead it lowers the probability that the ABA problem will hapen, at the expense of leaving fewer bits available for the variable. There is, in fact, a tradeoff between the number of usefull bits in the memory location and the probability that the ABA problem will happen.
+A standard way to solve the problem is to incorporate a counter along with the memory location we are trying to update. CAS is now performed not on the memory location itself but on the pair \textless memory location, counter\textless and every succesful CAS will increment the counter. Thus, a delayed CAS will find the memory location altered because of the different counter and it will fail. This does not solver the problem, because the counter may track only a finite amount of updates. Instead it lowers the probability that the ABA problem will happen, at the expense of leaving fewer bits available for the variable. There is, in fact, a tradeoff between the number of useful bits in the memory location and the probability that the ABA problem will happen.
 
 
 Alternatively,  there have been put forward many ways to solve the ABA problem, for example with the use of reference counters, that doesn't require merging counters and variables.
@@ -238,7 +238,7 @@ Data structures, as a way of storing and organizing information is one the most 
 
 With the introduction of parallel programming,  available data structure had to be re-factored respectively, to provide safe, synchronized access to multiple threads. Challenging as it was, for sequential data structure, to ensure safety and consistency of the structure against the effects of any operation, the inherited difficulties of parallel programming the way any thread can unexpectedly perform operations on common data, made keeping concurrent data structures safe even more difficult. Even further, it is not enough that the structure is kept safe and nothing bad will never happen; there is also the demand that something good will always happen and the data structure as a whole will keep progressing and serving requests. 
 
-Coming up with fast concurrent data structures is  important, in parallel programming, for one more reason. According to Amdahl's law, explained previously, the part of an application that is sequential, seriously prohibits it's maximum gain from parallelization. It just so happens that operations on a shared data structure usually belong to that sequential part. Even in applications that are naturally parallel and every thread can execute its operations independently, some sort of data organization in a shared structure that is accessible by all will be eventually needed.  It is therefore of paramount importance that a concurrent data structure will try to allow more work to be done in parallel and reduce sequential parts, that usually consist of synchronization costs. In addition to that, concurrent accesses to the data structure must not create bus congestion and cache coherence traffic, since this would further degrade overall performance and introduce more bottlnecks. All this matters are in fact the major points of focus in the study of concurrent data structures. % Consider speedup S as the ratio between the time it takes on processor to finish a job and the amount of time it takes for n processor to finish that job. Also consider f to be the fraction of the job  that cannot be parallelized and must be done sequential. Amdahl's law dictates that 
+Coming up with fast concurrent data structures is  important, in parallel programming, for one more reason. According to Amdahl's law, explained previously, the part of an application that is sequential, seriously prohibits it's maximum gain from parallelization. It just so happens that operations on a shared data structure usually belong to that sequential part. Even in applications that are naturally parallel and every thread can execute its operations independently, some sort of data organization in a shared structure that is accessible by all will be eventually needed.  It is therefore of paramount importance that a concurrent data structure will try to allow more work to be done in parallel and reduce sequential parts, that usually consist of synchronization costs. In addition to that, concurrent accesses to the data structure must not create bus congestion and cache coherence traffic, since this would further degrade overall performance and introduce more bottlenecks. All this matters are in fact the major points of focus in the study of concurrent data structures. % Consider speedup S as the ratio between the time it takes on processor to finish a job and the amount of time it takes for n processor to finish that job. Also consider f to be the fraction of the job  that cannot be parallelized and must be done sequential. Amdahl's law dictates that 
 
 %\begin{math}
 %\begin{align*}
