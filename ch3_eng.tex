@@ -38,7 +38,7 @@ Hopscotch hashing combines linear probing and cuckoo hashing. First , buckets ar
 \begin{figure}
  \centering
   \includegraphics[scale=0.5]{hopscotch_hashing.png}
-\caption{Example of an insertion in hopscotch hashing. Here we try to insert value 6 and the first empty bucket is found at index 13, outside the neighbourhood of bucket 6. We then find out that w an index 11 can be displaced to the empty bucket and we place it there. Now the empty bucket is at index 11 wich is still far from 6. Subsequently, by switching places with buckets 9 and 6, the empty bucket is finally at index 6 and the new value can be inserted }
+\caption[Example of an insertion in hopscotch hashing]{Example of an insertion in hopscotch hashing. Here we try to insert value 6 and the first empty bucket is found at index 13, outside the neighbourhood of bucket 6. We then find out that w an index 11 can be displaced to the empty bucket and we place it there. Now the empty bucket is at index 11 wich is still far from 6. Subsequently, by switching places with buckets 9 and 6, the empty bucket is finally at index 6 and the new value can be inserted }
 \label{fig:hopscotch_hashing}
 \end{figure}
 
@@ -148,7 +148,7 @@ Split ordering is in fact the reverse bit representation of values, kept in asce
 \begin{figure}
  \centering
   \includegraphics[scale=0.5]{split_ordered_1.png}
-\caption{This figure explains how split ordeding manages to effectively split a bucket in half.In part a , the list consists of two buckets. Above each node is it's split-ordered key, which is the reversed bit representation of each value. Square nodes are sentinel nodes, depicting the start of each bucket. When the table capacity grows from 2 to 4 in  part b, two new buckets are inserted, spliting the older one in half}
+\caption[Resizing in split ordered hash table ]{This figure explains how split ordeding manages to effectively split a bucket in half.In part a , the list consists of two buckets. Above each node is it's split-ordered key, which is the reversed bit representation of each value. Square nodes are sentinel nodes, depicting the start of each bucket. When the table capacity grows from 2 to 4 in  part b, two new buckets are inserted, spliting the older one in half}
 \label{split_ordered_1}
 \end{figure}
 
@@ -164,7 +164,7 @@ Figure \ref{split_ordered_2} is an example of how adding a new value in the hash
 \begin{figure}
  \centering
   \includegraphics[scale=0.5]{split_ordered_2.png}
-\caption{Example of an insertion in the split ordered list. At part a , the bucket 2 is uninitialized. Inserting value 10, initializes the bucket, inserting a sentinel node in the list, before the actuall insertion of 10 at part d}
+\caption[Example of an insertion in the split ordered list]{Example of an insertion in the split ordered list. At part a , the bucket 2 is uninitialized. Inserting value 10, initializes the bucket, inserting a sentinel node in the list, before the actuall insertion of 10 at part d}
 \label{split_ordered_2}
 \end{figure}
 
@@ -231,7 +231,7 @@ The basic idea behind cuckoo hashing is better shown during the insertion operat
 \begin{figure}
  \centering
   \includegraphics[scale=0.5]{cuckoo_hashing.png}
-\caption{Insertion in cuckoo hashing. Trying to insert value 14, we find both apropriate bucket taken by values 3 and 23. Thus, a sequence of displacements is triggered, ending when value 39 is inserted to the previously empty bucket at Table[1][6] }
+\caption[Insertion in cuckoo hashing]{Insertion in cuckoo hashing. Trying to insert value 14, we find both apropriate bucket taken by values 3 and 23. Thus, a sequence of displacements is triggered, ending when value 39 is inserted to the previously empty bucket at Table[1][6] }
 \end{figure}
 
 The chain of evictions and insertions can grow too long if either the table is too full and no empty buckets can be found easily, or the sequence of displacements form a circle, looping over the same buckets. For this reason, we set an upper limit on the number of evictions triggered by a single insertion. If that limit is exceeded, the table needs to be resized.
